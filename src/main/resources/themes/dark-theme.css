@@ -1,0 +1,509 @@
+/* Загальні налаштування */
+.pane {
+    -fx-background-color: #202124;
+}
+
+.filter-label {
+    -fx-font-weight: bold;
+}
+
+/* Кнопки */
+.button {
+    -fx-background-color: #343639;
+    -fx-text-fill: #e8eaed;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 5px 10px;
+}
+
+.button:hover {
+    -fx-background-color: #5f6368;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.5, 0, 0);
+}
+
+.button:pressed {
+    -fx-background-color: #3e4043;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.5, 0, 0);
+}
+
+/* Таблиці */
+.table-view {
+    -fx-background-color: #292a2d;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-text-fill: #e8eaed;
+    -fx-control-inner-background: #292a2d;
+    -fx-padding: 3px;
+
+}
+.table-view .filler {
+    -fx-background-color: rgba(137, 154, 149, 0);
+}
+
+.table-view > .virtual-flow {
+    -fx-background-color: rgba(255, 0, 0, 0);
+}
+
+.table-view > .virtual-flow > .scroll-bar:vertical,
+.table-view > .virtual-flow > .scroll-bar:vertical > .track,
+.table-view > .virtual-flow > .scroll-bar:vertical > .track-background,
+.table-view > .virtual-flow > .scroll-bar:horizontal,
+.table-view > .virtual-flow > .scroll-bar:horizontal > .track,
+.table-view > .virtual-flow > .scroll-bar:horizontal > .track-background {
+    -fx-background-color: transparent;
+}
+
+.table-view > .virtual-flow > .scroll-bar > .increment-button,
+.table-view > .virtual-flow > .scroll-bar > .decrement-button {
+    -fx-opacity: 1;
+}
+
+.table-row-cell{
+    -fx-border-color: rgba(255, 255, 255, 0.16);
+    -fx-table-cell-border-color: rgba(255, 255, 255, 0.16);}
+
+/* Заголовки стовпців */
+.table-view .column-header .label {
+    -fx-background-color: rgb(71, 73, 83);
+    -fx-text-fill: #e8eaed;
+    -fx-text-alignment: CENTER;
+}
+
+.table-view .column-header-background{
+    -fx-background-color: rgb(174, 177, 195);
+//-fx-padding: 2px;
+}
+.table-view .column-header {
+    -fx-background-color: transparent;
+}
+
+
+
+.label {
+    -fx-text-fill: #F0F8FF;
+}
+
+/* Фон рядків */
+.table-row-cell {
+    -fx-background-color: #292a2d;
+    -fx-text-fill: #e8eaed;
+}
+
+/* Фон рядка при наведенні */
+.table-row-cell:hover {
+    -fx-background-color: #525357;
+}
+
+/* Фон вибраного рядка */
+.table-row-cell:selected {
+    -fx-background-color: #5f6368;
+}
+
+/* Текст у комірках таблиці */
+.table-cell {
+    -fx-text-fill: #e8eaed;
+}
+
+/* Гарантоване відображення тексту у всіх комірках */
+.table-view .cell {
+    -fx-text-fill: #e8eaed;
+}
+
+
+
+/* Панелі */
+.hbox, .vbox {
+    -fx-background-color: #202124;
+}
+
+
+
+.internal-window {
+    -fx-background-color: #454549;
+    -fx-border-color: #5f6368;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0.5, 0, 0);
+}
+
+.rectangle {
+    -fx-fill: #3c4043;
+    -fx-stroke: #5f6368;
+}
+
+/* Контекстне меню */
+.context-menu {
+    -fx-background-color: #292a2d;
+    -fx-border-color: #5f6368;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.combo-box .list-cell:selected {
+    -fx-background-color: #292a2d;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.5, 0, 0);
+}
+
+/* Поля вводу */
+.text-field, .combo-box,.combo-box:focused, .date-picker {
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-background-color: #292a2d;
+    -fx-text-fill: #e8eaed;
+    -fx-border-color: #5f6368;
+}
+
+.date-picker {
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.combo-box .list-cell {
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.text-field:focused, .date-picker:focused {
+    -fx-background-color: #3c4043;
+}
+
+/* ListView */
+.list-view {
+    -fx-background-color: #292a2d;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.list-cell {
+    -fx-background-color: #292a2d;
+    -fx-text-fill: #e8eaed;
+    -fx-border-width: 1px;
+    -fx-border-color: rgba(52, 58, 64, 0.3);
+}
+
+.list-cell:hover {
+    -fx-background-color: #525357;
+}
+
+.list-cell:selected {
+    -fx-background-color: #5f6368;
+    -fx-text-fill: #ffffff;
+}
+
+.date-picker .text {
+    -fx-text-fill: #e8eaed;
+}
+
+.calendar-grid {
+    -fx-background-color: #5f6368;
+}
+.date-picker-popup {
+    -fx-background-color:#5f6368;
+}
+.date-picker .arrow-button .arrow {
+    -fx-background-color: white;
+}
+.date-picker-popup .spinner .button .left-arrow,
+.date-picker-popup .spinner .button .right-arrow {
+    -fx-background-color: #5f6368;
+}
+
+.date-picker-popup .month-year-pane {
+    -fx-background-color: #5f6368;
+}
+
+.date-picker .arrow-button {
+    -fx-background-color: #292a2d;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.date-picker .arrow-button:hover {
+    -fx-background-color: #525357;
+}
+
+.date-picker .calendar-popup {
+    -fx-background-color: #292a2d;
+    -fx-border-color: #5f6368;
+    -fx-text-fill: #e8eaed;
+}
+
+.date-picker .calendar-popup .date-cell {
+    -fx-text-fill: #e8eaed;
+}
+
+.date-picker .calendar-popup .date-cell:hover {
+    -fx-background-color: #525357;
+}
+
+.date-picker .calendar-popup .date-cell:selected {
+    -fx-background-color: #5f6368;
+    -fx-text-fill: #ffffff;
+}
+
+.header {
+    -fx-background-color: #CDC9C9;
+    -fx-border-radius:5px 5px 0px 0px;
+    -fx-background-radius:5px 5px 0px 0px;
+    -fx-padding: 4px;
+}
+
+.window-title {
+    -fx-padding: 5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #3a3a3a;
+}
+
+.control-buttons .button {
+    -fx-background-color: #d8d3d3;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.1, 0, 0);
+}
+
+.navigation-bar {
+    -fx-padding: 5px;
+    -fx-background-color: #202124;
+}
+.navigation-bar .button {
+    -fx-background-color: #b3afaf;
+    -fx-text-fill: #232121;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0.5, 0, 0);
+}
+
+.green-button {
+    -fx-background-color: #b7c1ba;
+    -fx-text-fill: #353535;
+    -fx-font-weight: bold;
+}
+
+.green-button:hover {
+    -fx-background-color: #4a504c;
+    -fx-text-fill: #dadada;
+}
+
+.red-button {
+    -fx-background-color: #c3b4b4;
+    -fx-text-fill: #353535;
+    -fx-font-weight: bold;
+}
+
+.red-button:hover {
+    -fx-background-color: #595252;
+    -fx-text-fill: #dadada;
+}
+
+.yellow-button {
+    -fx-background-color: #bcb9ab;
+    -fx-text-fill: #353535;
+    -fx-font-weight: bold;
+}
+
+.yellow-button:hover {
+    -fx-background-color: #515049;
+    -fx-text-fill: #dadada;
+}
+
+.grey-button {
+    -fx-background-color: #b6b6b6;
+    -fx-text-fill: #353535;
+    -fx-font-weight: bold;
+}
+
+.grey-button:hover {
+    -fx-background-color: #505050;
+    -fx-text-fill: #dadada;
+}
+/* Панель меню */
+.menu-bar {
+    -fx-background-color: #a1aea1;
+    -fx-border-color: #5f6368;
+}
+
+.menu {
+    -fx-text-fill: #333333;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.menu:hover{
+    -fx-background-color: #8b978b;
+}
+
+.menu .label {
+    -fx-text-fill: #333333;
+}
+
+.menu-item:hover {
+    -fx-background-color: #818c81;
+}
+
+.menu-item {
+    -fx-background-color: #a1aea1;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.menu-item:focused {
+    -fx-background-color: #a1aea1;
+}
+
+.menu .context-menu {
+    -fx-border-color: transparent;
+    -fx-background-color: #494949;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 1px;
+
+}
+
+.menu .context-menu .menu-item {
+    -fx-background-color: #494949;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-font-weight:normal;
+    -fx-font-size: 12px;
+}
+.menu .context-menu .menu-item .label {
+    -fx-text-fill: #d8d8d8;
+
+}
+
+.menu .context-menu .menu-item:hover {
+    -fx-background-color: #acabab;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.menu .context-menu .menu-item:hover .label{
+    -fx-text-fill: #373737;
+}
+
+.radio-button {
+    -fx-text-fill: #e8e8e8;
+}
+
+.spinner {
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.radio-button .radio {
+    -fx-background-color: #aeaeae;
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+}
+
+.radio-button:selected .radio {
+    -fx-background-color: #9acd87;
+}
+
+.check-box {
+    -fx-text-fill: #e8e8e8;
+}
+
+/* Основний фон чекбокса */
+.check-box .box {
+    -fx-background-color: #e8e8e8;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.check-box:hover .box {
+    -fx-background-color: #d1d1d1;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #5b7e5b;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: rgba(255, 255, 255, 0);
+    -fx-border-color: white;
+    -fx-border-width: 2px;
+    -fx-shape: "m4.5 12.75 6 6 9-13.5"; /* Форма галочки */
+}
+
+
+
+.increment-arrow-button {
+    -fx-background-color: #292a2d;
+    -fx-text-fill: #e8e8e8;
+    -fx-border-radius:5px 5px 0px 0px;
+    -fx-background-radius:5px 5px 0px 0px;
+}
+
+.increment-arrow-button:hover {
+    -fx-background-color: #525357;
+}
+
+.increment-arrow-button:pressed {
+    -fx-background-color: #434447;
+}
+
+.decrement-arrow-button {
+    -fx-background-color: #292a2d;
+    -fx-text-fill: #e8e8e8;
+    -fx-border-radius:0px 0px 5px 5px;
+    -fx-background-radius: 0px 0px 5px 5px;
+}
+.spinner {
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-background-color: #292a2d;
+    -fx-border-color: #5f6368;
+}
+
+.decrement-arrow-button:hover {
+    -fx-background-color: #525357;
+}
+
+.decrement-arrow-button:pressed {
+    -fx-background-color: #434447;
+}
+
+.pagination {
+    -fx-background-color: rgba(32, 33, 36, 0);
+}
+
+.pagination .control-box {
+    -fx-spacing: 2px;
+    -fx-padding: 2px;
+    -fx-alignment: center;
+}
+
+.pagination .number-button {
+    -fx-background-color: #2C2C2C;
+    -fx-text-fill: #E0E0E0;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.pagination .number-button:selected {
+    -fx-background-color: #007BFF;
+    -fx-text-fill: white;
+}
+
+.pagination .number-button:hover {
+    -fx-background-color: #3A3A3A;
+    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.3), 5, 0.5, 0, 0);
+}
+
+.pagination .arrow-button {
+    -fx-background-color: #2C2C2C;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-text-fill: #E0E0E0;
+}
+
+.pagination .arrow-button:hover {
+    -fx-background-color: #3A3A3A;
+}
+
+.uniform-button {
+    -fx-pref-height: 32px;
+}

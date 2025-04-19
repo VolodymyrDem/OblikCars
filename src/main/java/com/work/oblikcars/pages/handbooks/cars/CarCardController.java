@@ -1,0 +1,165 @@
+package com.work.oblikcars.pages.handbooks.cars;
+
+import com.work.oblikcars.Utils.AlertsUtil;
+import com.work.oblikcars.Utils.DB.CarUtil;
+import com.work.oblikcars.Utils.PagesUtil;
+import com.work.oblikcars.model._Car;
+import com.work.oblikcars.pages.MainPage;
+import com.work.oblikcars.pages.WindowController;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+
+public class CarCardController extends WindowController {
+    private MainPage mainPage;
+    private CarUtil carUtil;
+    private GridPane grid;
+    private TextField vinField;
+    private TextField numberField;
+    private TextField modelField;
+    private TextField fuelField;
+    private TextField engineVolumeField;
+    private DatePicker rentDatePicker;
+    private TextField mileageStartField;
+    private DatePicker firstRegistrationDatePicker;
+    private TextField priceOfFirstRegistrationField;
+    private TextField daysForReRegistrationField;
+    private TextField priceField;
+    private String windowTitle;
+    private CarsHandbookController carsHandbookController;
+    private int id;
+
+    public CarCardController(){}
+
+    public void openWindow(CarsHandbookController handbook, _Car selectedCar) {
+        windowTitle = (selectedCar == null)?"Довідник: автомобілі - додати авто" : "Довідник: автомобілі - редагувати авто";
+        mainPage = MainPage.getInstance();
+
+        if(mainPage.checkOpenWindow(windowTitle))return;
+
+        carUtil = CarUtil.getInstance();
+        carsHandbookController = handbook;
+        grid = new GridPane();
+
+        Label vinLabel = new Label("Він код");
+        Label numberLabel = new Label("Номер");
+        Label modelLabel = new Label("Модель");
+        Label fuelLabel = new Label("Тип палива");
+        Label engineVolumeLabel = new Label("Об'єм двигуна");
+        Label rentDateLabel = new Label("Дата передачі в ренту");
+        Label mileageStartLabel = new Label("Пробіг на початку");
+        Label firstRegistrationDateLabel = new Label("Дата першої реєстрації");
+        Label priceOfFirstRegistrationLabel = new Label("Ціна першої реєстрації");
+        Label daysForReRegistrationLabel = new Label("Кіль-ть днів до перереєстрації");
+        Label priceLabel = new Label("Ціна авто");
+
+        vinField = new TextField();
+        numberField = new TextField();
+        modelField = new TextField();
+        fuelField = new TextField();
+        engineVolumeField = new TextField();
+        rentDatePicker = new DatePicker();
+        mileageStartField = new TextField();
+        firstRegistrationDatePicker = new DatePicker();
+        priceOfFirstRegistrationField = new TextField();
+        daysForReRegistrationField = new TextField();
+        priceField = new TextField();
+
+        if(selectedCar != null){
+            id = selectedCar.getId();
+            vinField.setText(selectedCar.getVin());
+            numberField.setText(selectedCar.getNumber());
+            modelField.setText(selectedCar.getModel());
+            fuelField.setText(selectedCar.getFuel());
+            engineVolumeField.setText(String.valueOf(selectedCar.getEngineVolume()));
+            rentDatePicker.setValue(selectedCar.getRentDate());
+            mileageStartField.setText(String.valueOf(selectedCar.getMileageStart()));
+            firstRegistrationDatePicker.setValue(selectedCar.getFirstRegistrationDate());
+            priceOfFirstRegistrationField.setText(String.valueOf(selectedCar.getPriceOfFirstRegistration()));
+            daysForReRegistrationField.setText(String.valueOf(selectedCar.getDaysForReRegistration()));
+            priceField.setText(String.valueOf(selectedCar.getPrice()));
+        }
+
+        grid = PagesUtil.buildGridDouble(
+                vinLabel, vinField,
+                numberLabel, numberField,
+                modelLabel, modelField,
+                fuelLabel, fuelField,
+                engineVolumeLabel, engineVolumeField,
+                rentDateLabel, rentDatePicker,
+                mileageStartLabel, mileageStartField,
+                firstRegistrationDateLabel, firstRegistrationDatePicker,
+                priceOfFirstRegistrationLabel, priceOfFirstRegistrationField,
+                daysForReRegistrationLabel, daysForReRegistrationField,
+                priceLabel, priceField
+        );
+
+        Button saveButton = new Button("Зберегти");
+
+        saveButton.setOnAction(e ->{
+            handleAction(selectedCar != null);
+        });
+
+        VBox vbox = new VBox();
+        vbox.getChildren().addAll(grid, saveButton);
+
+        mainPage.openInternalWindow(vbox, windowTitle, false);
+
+    }
+
+    private void handleAction(boolean isEditing){
+        if (checkInput()) {
+            AlertsUtil.ErrorAlert("Помилка вводу", "Введіть усі необхідні дані").showAndWait();
+        } else {
+            try {
+                AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати авто" : "Додати авто").showAndWait().ifPresent(response -> {
+                    if (response == ButtonType.OK) {
+                        _Car car = createCar();
+                        if(isEditing){
+                            car.setId(id);
+                            carUtil.editCar(car);
+                        }
+                        else
+                            carUtil.addCar(createCar());
+
+                        mainPage.closeInternalWindow(windowTitle);
+                        carsHandbookController.updateValues();
+                    }
+                });
+            } catch (NumberFormatException ex) {
+                AlertsUtil.ErrorAlert("Помилка вводу", "Неправильні введені дані").showAndWait();
+            }
+        }
+    }
+
+    private _Car createCar(){
+        _Car car = new _Car();
+        car.setVin(vinField.getText());
+        car.setNumber(numberField.getText());
+        car.setModel(modelField.getText());
+        car.setFuel(fuelField.getText());
+        car.setEngineVolume(Double.parseDouble(engineVolumeField.getText()));
+        car.setRentDate(rentDatePicker.getValue());
+        car.setMileageStart(Double.parseDouble(mileageStartField.getText()));
+        car.setFirstRegistrationDate(firstRegistrationDatePicker.getValue());
+        car.setPriceOfFirstRegistration(Double.parseDouble(priceOfFirstRegistrationField.getText()));
+        car.setDaysForReRegistration(Integer.parseInt(daysForReRegistrationField.getText()));
+        car.setPrice(Double.parseDouble(priceField.getText()));
+        return car;
+    }
+
+    private boolean checkInput() {
+        return isEmptyOrWhitespace(vinField.getText()) ||
+                isEmptyOrWhitespace(numberField.getText()) ||
+                isEmptyOrWhitespace(modelField.getText()) ||
+                isEmptyOrWhitespace(fuelField.getText()) ||
+                !isDouble(engineVolumeField.getText()) ||
+                rentDatePicker.getValue() == null ||
+                !isDouble(mileageStartField.getText()) ||
+                firstRegistrationDatePicker.getValue() == null ||
+                !isDouble(priceOfFirstRegistrationField.getText()) ||
+                !isDouble(daysForReRegistrationField.getText()) ||
+                !isDouble(priceField.getText());
+    }
+
+}

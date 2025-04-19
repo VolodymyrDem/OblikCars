@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>C:\Users\Volodymyr\Desktop\OblikCars\out\artifacts\OblikCars_jar\OblikCars.jar</jar>
+  <outfile>C:\Users\Volodymyr\Desktop\OblikCars\out\artifacts\OblikCars_jar\program.exe</outfile>
+  <errTitle></errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl></downloadUrl>
+  <supportUrl></supportUrl>
+  <stayAlive>false</stayAlive>
+  <restartOnCrash>false</restartOnCrash>
+  <manifest></manifest>
+  <icon>C:\Users\Volodymyr\Desktop\OblikCars\src\main\resources\icon.ico</icon>
+  <jre>
+    <path>C:\Program Files\Java\jdk-23</path>
+    <requiresJdk>false</requiresJdk>
+    <requires64Bit>false</requires64Bit>
+    <minVersion></minVersion>
+    <maxVersion></maxVersion>
+  </jre>
+</launch4jConfig>
