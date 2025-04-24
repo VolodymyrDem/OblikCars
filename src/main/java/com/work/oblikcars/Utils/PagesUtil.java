@@ -49,6 +49,27 @@ public class PagesUtil {
 
         return grid;
     }
+    public static GridPane buildSplitGridQuad(Node... elements) {
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        int totalPairs = elements.length / 2;
+        int half = totalPairs / 2 + (totalPairs % 2 == 1 ? 1 : 0);
+
+        for (int i = 0; i < totalPairs; i++) {
+            Node label = elements[i * 2];
+            Node node = elements[i * 2 + 1];
+
+            int row = (i < half) ? i : i - half;
+            int col = (i < half) ? 0 : 2;
+
+            grid.add(label, col, row);
+            grid.add(node, col + 1, row);
+        }
+
+        return grid;
+    }
 
 
 

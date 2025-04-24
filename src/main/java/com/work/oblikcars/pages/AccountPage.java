@@ -61,6 +61,7 @@ public class AccountPage extends Application {
         Scene scene = new Scene(layout, 500, 400);
         ThemeUtil.applyTheme(scene, "light");
         primaryStage.setScene(scene);
+        primaryStage.setMaximized(false);
         primaryStage.show();
     }
 

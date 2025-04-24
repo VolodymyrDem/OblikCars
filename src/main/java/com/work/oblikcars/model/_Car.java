@@ -7,13 +7,15 @@ public class _Car {
     private String vin;
     private String number;
     private String model;
+    private int year;
+    private String color;
+    private String description;
     private String fuel;
     private double engineVolume;
     private LocalDate rentDate;
     private double mileageStart;
     private LocalDate firstRegistrationDate;
     private double priceOfFirstRegistration;
-    private int daysForReRegistration;
     private double price;
     private boolean valid;
 
@@ -24,33 +26,37 @@ public class _Car {
         return number + " " + model;
     }
 
-    public _Car(int id, String vin, String number, String model, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, int daysForReRegistration, double price, boolean valid) {
-        this.id = id;
+    public _Car(String vin, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid) {
         this.vin = vin;
         this.number = number;
         this.model = model;
+        this.year = year;
+        this.color = color;
+        this.description = description;
         this.fuel = fuel;
         this.engineVolume = engineVolume;
         this.rentDate = rentDate;
         this.mileageStart = mileageStart;
         this.firstRegistrationDate = firstRegistrationDate;
         this.priceOfFirstRegistration = priceOfFirstRegistration;
-        this.daysForReRegistration = daysForReRegistration;
         this.price = price;
         this.valid = valid;
     }
 
-    public _Car(String vin, String number, String model, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, int daysForReRegistration, double price, boolean valid) {
+    public _Car(int id, String vin, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid) {
+        this.id = id;
         this.vin = vin;
         this.number = number;
         this.model = model;
+        this.year = year;
+        this.color = color;
+        this.description = description;
         this.fuel = fuel;
         this.engineVolume = engineVolume;
         this.rentDate = rentDate;
         this.mileageStart = mileageStart;
         this.firstRegistrationDate = firstRegistrationDate;
         this.priceOfFirstRegistration = priceOfFirstRegistration;
-        this.daysForReRegistration = daysForReRegistration;
         this.price = price;
         this.valid = valid;
     }
@@ -143,12 +149,28 @@ public class _Car {
         this.priceOfFirstRegistration = priceOfFirstRegistration;
     }
 
-    public int getDaysForReRegistration() {
-        return daysForReRegistration;
+    public int getYear() {
+        return year;
     }
 
-    public void setDaysForReRegistration(int daysForReRegistration) {
-        this.daysForReRegistration = daysForReRegistration;
+    public void setYear(int year) {
+        this.year = year;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public double getPrice() {

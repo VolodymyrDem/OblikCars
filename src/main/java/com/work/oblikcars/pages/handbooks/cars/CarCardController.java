@@ -23,9 +23,12 @@ public class CarCardController extends WindowController {
     private TextField mileageStartField;
     private DatePicker firstRegistrationDatePicker;
     private TextField priceOfFirstRegistrationField;
-    private TextField daysForReRegistrationField;
+    private CheckBox validCheckBox;
     private TextField priceField;
     private String windowTitle;
+    private TextField yearField;
+    private TextField colorField;
+    private TextArea descriptionField;
     private CarsHandbookController carsHandbookController;
     private int id;
 
@@ -50,9 +53,16 @@ public class CarCardController extends WindowController {
         Label mileageStartLabel = new Label("Пробіг на початку");
         Label firstRegistrationDateLabel = new Label("Дата першої реєстрації");
         Label priceOfFirstRegistrationLabel = new Label("Ціна першої реєстрації");
-        Label daysForReRegistrationLabel = new Label("Кіль-ть днів до перереєстрації");
         Label priceLabel = new Label("Ціна авто");
+        Label yearLabel = new Label("Рік випуску");
+        Label colorLabel = new Label("Колір");
+        Label descriptionLabel = new Label("Опис");
 
+        validCheckBox = new CheckBox("Валідність");
+        yearField = new TextField();
+        colorField = new TextField();
+        descriptionField = new TextArea();
+        descriptionField.setPrefRowCount(2);
         vinField = new TextField();
         numberField = new TextField();
         modelField = new TextField();
@@ -62,10 +72,12 @@ public class CarCardController extends WindowController {
         mileageStartField = new TextField();
         firstRegistrationDatePicker = new DatePicker();
         priceOfFirstRegistrationField = new TextField();
-        daysForReRegistrationField = new TextField();
         priceField = new TextField();
 
         if(selectedCar != null){
+            yearField.setText(String.valueOf(selectedCar.getYear()));
+            colorField.setText(selectedCar.getColor());
+            descriptionField.setText(selectedCar.getDescription());
             id = selectedCar.getId();
             vinField.setText(selectedCar.getVin());
             numberField.setText(selectedCar.getNumber());
@@ -76,23 +88,31 @@ public class CarCardController extends WindowController {
             mileageStartField.setText(String.valueOf(selectedCar.getMileageStart()));
             firstRegistrationDatePicker.setValue(selectedCar.getFirstRegistrationDate());
             priceOfFirstRegistrationField.setText(String.valueOf(selectedCar.getPriceOfFirstRegistration()));
-            daysForReRegistrationField.setText(String.valueOf(selectedCar.getDaysForReRegistration()));
             priceField.setText(String.valueOf(selectedCar.getPrice()));
+            validCheckBox.setSelected(selectedCar.isValid());
+            validCheckBox.setDisable(false);
+        }
+        else {
+            validCheckBox.setSelected(true);
+            validCheckBox.setDisable(true);
         }
 
         grid = PagesUtil.buildGridDouble(
                 vinLabel, vinField,
                 numberLabel, numberField,
                 modelLabel, modelField,
+                yearLabel, yearField,
+                colorLabel, colorField,
                 fuelLabel, fuelField,
                 engineVolumeLabel, engineVolumeField,
                 rentDateLabel, rentDatePicker,
                 mileageStartLabel, mileageStartField,
                 firstRegistrationDateLabel, firstRegistrationDatePicker,
                 priceOfFirstRegistrationLabel, priceOfFirstRegistrationField,
-                daysForReRegistrationLabel, daysForReRegistrationField,
-                priceLabel, priceField
+                priceLabel, priceField,
+                descriptionLabel, descriptionField
         );
+
 
         Button saveButton = new Button("Зберегти");
 
@@ -101,7 +121,7 @@ public class CarCardController extends WindowController {
         });
 
         VBox vbox = new VBox();
-        vbox.getChildren().addAll(grid, saveButton);
+        vbox.getChildren().addAll(grid, validCheckBox, saveButton);
 
         mainPage.openInternalWindow(vbox, windowTitle, false);
 
@@ -138,28 +158,34 @@ public class CarCardController extends WindowController {
         car.setNumber(numberField.getText());
         car.setModel(modelField.getText());
         car.setFuel(fuelField.getText());
-        car.setEngineVolume(Double.parseDouble(engineVolumeField.getText()));
+        car.setEngineVolume(Double.parseDouble(engineVolumeField.getText().replace(",", ".")));
         car.setRentDate(rentDatePicker.getValue());
-        car.setMileageStart(Double.parseDouble(mileageStartField.getText()));
+        car.setMileageStart(Double.parseDouble(mileageStartField.getText().replace(",", ".")));
         car.setFirstRegistrationDate(firstRegistrationDatePicker.getValue());
-        car.setPriceOfFirstRegistration(Double.parseDouble(priceOfFirstRegistrationField.getText()));
-        car.setDaysForReRegistration(Integer.parseInt(daysForReRegistrationField.getText()));
-        car.setPrice(Double.parseDouble(priceField.getText()));
+        car.setPriceOfFirstRegistration(Double.parseDouble(priceOfFirstRegistrationField.getText().replace(",", ".")));
+        car.setPrice(Double.parseDouble(priceField.getText().replace(",", ".")));
+        car.setYear(Integer.parseInt(yearField.getText()));
+        car.setColor(colorField.getText());
+        car.setDescription(descriptionField.getText());
+        car.setValid(validCheckBox.isSelected());
         return car;
     }
 
     private boolean checkInput() {
-        return isEmptyOrWhitespace(vinField.getText()) ||
+        return isEmptyOrWhitespace(yearField.getText()) ||
+                isEmptyOrWhitespace(colorField.getText()) ||
+                descriptionField.getText() == null ||
+                !isInteger(yearField.getText()) ||
+                isEmptyOrWhitespace(vinField.getText()) ||
                 isEmptyOrWhitespace(numberField.getText()) ||
                 isEmptyOrWhitespace(modelField.getText()) ||
                 isEmptyOrWhitespace(fuelField.getText()) ||
-                !isDouble(engineVolumeField.getText()) ||
+                !isDouble(engineVolumeField.getText().replace(",", ".")) ||
                 rentDatePicker.getValue() == null ||
-                !isDouble(mileageStartField.getText()) ||
+                !isDouble(mileageStartField.getText().replace(",", ".")) ||
                 firstRegistrationDatePicker.getValue() == null ||
-                !isDouble(priceOfFirstRegistrationField.getText()) ||
-                !isDouble(daysForReRegistrationField.getText()) ||
-                !isDouble(priceField.getText());
+                !isDouble(priceOfFirstRegistrationField.getText().replace(",", ".")) ||
+                !isDouble(priceField.getText().replace(",", "."));
     }
 
 }

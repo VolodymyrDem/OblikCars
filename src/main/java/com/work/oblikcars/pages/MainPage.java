@@ -180,6 +180,7 @@ public class MainPage {
 
         primaryStage.setScene(scene);
         primaryStage.setTitle(dbUtil.getUsername());
+        primaryStage.setMaximized(true);
         primaryStage.show();
         resizeWorkspace(primaryStage);
 

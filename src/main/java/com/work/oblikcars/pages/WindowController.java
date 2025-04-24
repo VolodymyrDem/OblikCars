@@ -24,7 +24,6 @@ public abstract class WindowController {
     }
 
     protected boolean isInteger(String text) {
-        if (text == null) return false;
         try {
             Integer.parseInt(text);
             return true;

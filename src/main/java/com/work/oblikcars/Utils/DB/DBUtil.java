@@ -345,24 +345,27 @@ public class DBUtil {
 
             // 3) Створити таблицю cars
             String createCarsTable = """
-                CREATE TABLE IF NOT EXISTS `cars` (
-                    `id`                         INT NOT NULL AUTO_INCREMENT,
-                    `vin`                        MEDIUMTEXT NOT NULL,
-                    `number`                     MEDIUMTEXT NOT NULL,
-                    `model`                      MEDIUMTEXT NOT NULL,
-                    `fuel`                       MEDIUMTEXT NOT NULL,
-                    `engineVolume`               DOUBLE NOT NULL,
-                    `rentdate`                   DATE NOT NULL,
-                    `mileageStart`               DOUBLE NOT NULL,
-                    `firstRegistrationDate`      DATE NOT NULL,
-                    `priceOfFirstRegistration`   DOUBLE,
-                    `daysForReRegistration`      INT NOT NULL,
-                    `price`                      DOUBLE NOT NULL,
-                    `valid`                      TINYINT(1) DEFAULT 1,
-                    PRIMARY KEY (`id`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-                """;
+    CREATE TABLE IF NOT EXISTS `cars` (
+        `id`                         INT NOT NULL AUTO_INCREMENT,
+        `vin`                        MEDIUMTEXT NOT NULL,
+        `number`                     MEDIUMTEXT NOT NULL,
+        `year`                       INT NOT NULL,
+        `color`                      MEDIUMTEXT NOT NULL,
+        `description`               LONGTEXT,
+        `model`                      MEDIUMTEXT NOT NULL,
+        `fuel`                       MEDIUMTEXT NOT NULL,
+        `engineVolume`               DOUBLE NOT NULL,
+        `rentdate`                   DATE NOT NULL,
+        `mileageStart`               DOUBLE NOT NULL,
+        `firstRegistrationDate`      DATE NOT NULL,
+        `priceOfFirstRegistration`   DOUBLE,
+        `price`                      DOUBLE NOT NULL,
+        `valid`                      TINYINT(1) DEFAULT 1,
+        PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    """;
             statement.executeUpdate(createCarsTable);
+
 
             // 4) Створити таблицю inspections
             String createInspectionsTable = """

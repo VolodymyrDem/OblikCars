@@ -46,7 +46,7 @@ public class RegistrationCardController extends WindowController {
         priceField = new TextField();
 
 
-        carMap = carUtil.getCarsWithExpiredOrNoRegistrationMap(true);
+        carMap = carUtil.getAllCarComboMap(true);
         if (selectedRegistration != null) {
             addSelectedCarToMap(selectedRegistration.getCarId());
         }

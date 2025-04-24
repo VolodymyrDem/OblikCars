@@ -75,6 +75,16 @@ public class CarsHandbookController extends WindowController {
         TableColumn<_Car, String> modelCol = new TableColumn<>("Модель");
         modelCol.setCellValueFactory(new PropertyValueFactory<>("model"));
 
+        TableColumn<_Car, String> yearCol = new TableColumn<>("Рік");
+        yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
+
+        TableColumn<_Car, String> colorCol = new TableColumn<>("Колір");
+        colorCol.setCellValueFactory(new PropertyValueFactory<>("color"));
+
+        TableColumn<_Car, String> descriptionCol = new TableColumn<>("Опис");
+        descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
+
+
         TableColumn<_Car, String> fuelCol = new TableColumn<>("Тип палива");
         fuelCol.setCellValueFactory(new PropertyValueFactory<>("fuel"));
 
@@ -93,9 +103,6 @@ public class CarsHandbookController extends WindowController {
         TableColumn<_Car, String> priceOfFirstRegistrationCol = new TableColumn<>("Ціна першої реєстрації");
         priceOfFirstRegistrationCol.setCellValueFactory(new PropertyValueFactory<>("priceOfFirstRegistration"));
 
-        TableColumn<_Car, String> daysForReRegistrationCol = new TableColumn<>("Кіль-ть днів до перереєстрації");
-        daysForReRegistrationCol.setCellValueFactory(new PropertyValueFactory<>("daysForReRegistration"));
-
         TableColumn<_Car, String> priceCol = new TableColumn<>("Ціна авто");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
 
@@ -105,8 +112,8 @@ public class CarsHandbookController extends WindowController {
         });
 
 
-        carsTable.getColumns().addAll(vinCol, numberCol, modelCol, fuelCol, engineVolumeCol, rentDateCol,
-                mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, daysForReRegistrationCol, priceCol, actualCol);
+        carsTable.getColumns().addAll(vinCol, numberCol,colorCol, modelCol,yearCol, fuelCol, engineVolumeCol, rentDateCol,
+                mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol,descriptionCol,  actualCol);
 
         carsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;

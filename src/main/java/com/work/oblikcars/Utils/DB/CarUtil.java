@@ -2,10 +2,7 @@ package com.work.oblikcars.Utils.DB;
 
 import com.work.oblikcars.model._Car;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,36 +21,32 @@ public class CarUtil {
         return instance;
     }
 
+    private _Car mapResultSetToCar(ResultSet rs) throws SQLException {
+        return new _Car(
+                rs.getInt("id"),
+                rs.getString("vin"),
+                rs.getString("number"),
+                rs.getString("model"),
+                rs.getInt("year"),
+                rs.getString("color"),
+                rs.getString("description"),
+                rs.getString("fuel"),
+                rs.getDouble("engineVolume"),
+                rs.getDate("rentdate").toLocalDate(),
+                rs.getDouble("mileageStart"),
+                rs.getDate("firstRegistrationDate").toLocalDate(),
+                rs.getDouble("priceOfFirstRegistration"),
+                rs.getDouble("price"),
+                rs.getBoolean("valid")
+        );
+    }
+
     public List<_Car> getAllCars() {
         List<_Car> cars = new ArrayList<>();
-        String sql = "SELECT * FROM `cars`";
-
-        try (Connection connection = Connect();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-
-                int id = resultSet.getInt("id");
-                String vin = resultSet.getString("vin"); // use as pk
-                String number = resultSet.getString("number");
-                String model = resultSet.getString("model");
-                String fuel = resultSet.getString("fuel");
-                double engineVolume = resultSet.getDouble("engineVolume");
-                LocalDate rentDate = resultSet.getDate("rentdate").toLocalDate();
-                double mileageStart = resultSet.getDouble("mileageStart");
-                LocalDate firstRegistrationDate = resultSet.getDate("firstRegistrationDate").toLocalDate();
-                double priceOfFirstRegistration = resultSet.getDouble("priceOfFirstRegistration");
-                int daysForReRegistration = resultSet.getInt("daysForReRegistration");
-                double price = resultSet.getDouble("price");
-                boolean valid = resultSet.getBoolean("valid");
-
-                _Car car = new _Car(id, vin, number, model, fuel, engineVolume, rentDate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, daysForReRegistration, price, valid);
-                cars.add(car);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        String sql = "SELECT * FROM cars";
+        try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) cars.add(mapResultSetToCar(rs));
+        } catch (Exception e) { e.printStackTrace(); }
         return cars;
     }
 
@@ -70,25 +63,8 @@ public class CarUtil {
         try (Connection connection = Connect();
              PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-
-                int id = resultSet.getInt("id");
-                String vin = resultSet.getString("vin"); // use as pk
-                String number = resultSet.getString("number");
-                String model = resultSet.getString("model");
-                String fuel = resultSet.getString("fuel");
-                double engineVolume = resultSet.getDouble("engineVolume");
-                LocalDate rentDate = resultSet.getDate("rentdate").toLocalDate();
-                double mileageStart = resultSet.getDouble("mileageStart");
-                LocalDate firstRegistrationDate = resultSet.getDate("firstRegistrationDate").toLocalDate();
-                double priceOfFirstRegistration = resultSet.getDouble("priceOfFirstRegistration");
-                int daysForReRegistration = resultSet.getInt("daysForReRegistration");
-                double price = resultSet.getDouble("price");
-                boolean valid = resultSet.getBoolean("valid");
-
-                _Car car = new _Car(id, vin, number, model, fuel, engineVolume, rentDate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, daysForReRegistration, price, valid);
-                cars.add(car);
-            }
+            while (resultSet.next())
+                cars.add(mapResultSetToCar(resultSet));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -103,23 +79,7 @@ public class CarUtil {
 
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return new _Car(
-                            rs.getInt("id"),
-                            rs.getString("vin"),
-                            rs.getString("number"),
-                            rs.getString("model"),
-                            rs.getString("fuel"),
-                            rs.getDouble("engineVolume"),
-                            rs.getDate("rentdate").toLocalDate(),
-                            rs.getDouble("mileageStart"),
-                            rs.getDate("firstRegistrationDate").toLocalDate(),
-                            rs.getDouble("priceOfFirstRegistration"),
-                            rs.getInt("daysForReRegistration"),
-                            rs.getDouble("price"),
-                            rs.getBoolean("valid")
-                    );
-                }
+                if (rs.next()) return mapResultSetToCar(rs);
             }
         } catch (SQLException e) {
             System.err.println("Error fetching car by id: " + e.getMessage());
@@ -165,23 +125,7 @@ public class CarUtil {
              ResultSet resultSet = statement.executeQuery()) {
 
             while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String vin = resultSet.getString("vin");
-                String number = resultSet.getString("number");
-                String model = resultSet.getString("model");
-                String fuel = resultSet.getString("fuel");
-                double engineVolume = resultSet.getDouble("engineVolume");
-                LocalDate rentDate = resultSet.getDate("rentdate").toLocalDate();
-                double mileageStart = resultSet.getDouble("mileageStart");
-                LocalDate firstRegistrationDate = resultSet.getDate("firstRegistrationDate").toLocalDate();
-                double priceOfFirstRegistration = resultSet.getDouble("priceOfFirstRegistration");
-                int daysForReRegistration = resultSet.getInt("daysForReRegistration");
-                double price = resultSet.getDouble("price");
-                boolean valid = resultSet.getBoolean("valid");
-
-                _Car car = new _Car(id, vin, number, model, fuel, engineVolume, rentDate, mileageStart,
-                        firstRegistrationDate, priceOfFirstRegistration, daysForReRegistration, price, valid);
-
+                _Car car = mapResultSetToCar(resultSet);
                 if (!onlyValid || car.isValid()) {
                     map.put(car.getId(), car.getBoxString());
                 }
@@ -217,22 +161,7 @@ public class CarUtil {
              ResultSet resultSet = statement.executeQuery()) {
 
             while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String vin = resultSet.getString("vin");
-                String number = resultSet.getString("number");
-                String model = resultSet.getString("model");
-                String fuel = resultSet.getString("fuel");
-                double engineVolume = resultSet.getDouble("engineVolume");
-                LocalDate rentDate = resultSet.getDate("rentdate").toLocalDate();
-                double mileageStart = resultSet.getDouble("mileageStart");
-                LocalDate firstRegistrationDate = resultSet.getDate("firstRegistrationDate").toLocalDate();
-                double priceOfFirstRegistration = resultSet.getDouble("priceOfFirstRegistration");
-                int daysForReRegistration = resultSet.getInt("daysForReRegistration");
-                double price = resultSet.getDouble("price");
-                boolean valid = resultSet.getBoolean("valid");
-
-                _Car car = new _Car(id, vin, number, model, fuel, engineVolume, rentDate, mileageStart,
-                        firstRegistrationDate, priceOfFirstRegistration, daysForReRegistration, price, valid);
+                _Car car = mapResultSetToCar(resultSet);
 
                 if (!onlyValid || car.isValid()) {
                     map.put(car.getId(), car.getBoxString());
@@ -265,8 +194,6 @@ public class CarUtil {
                     }
                 }
             }
-
-            // Якщо немає закритих листів — беремо з cars
             _Car car = getCarById(carId);
             if (car != null) {
                 return car.getMileageStart();
@@ -276,63 +203,50 @@ public class CarUtil {
             System.err.println("Помилка при отриманні пробігу: " + e.getMessage());
         }
 
-        return 0.0; // fallback, якщо нічого не знайдено
+        return 0.0;
     }
 
     public void addCar(_Car car) {
-        String sql = "INSERT INTO cars (vin, number, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, daysForReRegistration, price)\n" +
-                "VALUES" +
-                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        try (Connection connection = Connect();
-             PreparedStatement insertStmt = connection.prepareStatement(sql)) {
-
-            insertStmt.setString(1, car.getVin());
-            insertStmt.setString(2, car.getNumber());
-            insertStmt.setString(3, car.getModel());
-            insertStmt.setString(4, car.getFuel());
-            insertStmt.setDouble(5, car.getEngineVolume());
-            insertStmt.setDate(6, java.sql.Date.valueOf(car.getRentDate()));
-            insertStmt.setDouble(7, car.getMileageStart());
-            insertStmt.setDate(8, java.sql.Date.valueOf(car.getFirstRegistrationDate()));
-            insertStmt.setDouble(9, car.getPriceOfFirstRegistration());
-            insertStmt.setInt(10, car.getDaysForReRegistration());
-            insertStmt.setDouble(11, car.getPrice());
-
-            insertStmt.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("Error adding car: " + e.getMessage());
-        }
+        String sql = "INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, car.getVin());
+            ps.setString(2, car.getNumber());
+            ps.setInt(3, car.getYear());
+            ps.setString(4, car.getColor());
+            ps.setString(5, car.getDescription());
+            ps.setString(6, car.getModel());
+            ps.setString(7, car.getFuel());
+            ps.setDouble(8, car.getEngineVolume());
+            ps.setDate(9, Date.valueOf(car.getRentDate()));
+            ps.setDouble(10, car.getMileageStart());
+            ps.setDate(11, Date.valueOf(car.getFirstRegistrationDate()));
+            ps.setDouble(12, car.getPriceOfFirstRegistration());
+            ps.setDouble(13, car.getPrice());
+            ps.setBoolean(14, car.isValid());
+            ps.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
     }
 
     public void editCar(_Car car) {
-        String sql = "UPDATE cars SET vin = ?, number = ?, model = ?, fuel = ?, engineVolume = ?, " +
-                "rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, " +
-                "daysForReRegistration = ?, price = ? WHERE id = ?";
-
-        try (Connection connection = Connect();
-             PreparedStatement updateStmt = connection.prepareStatement(sql)) {
-
-            updateStmt.setString(1, car.getVin());
-            updateStmt.setString(2, car.getNumber());
-            updateStmt.setString(3, car.getModel());
-            updateStmt.setString(4, car.getFuel());
-            updateStmt.setDouble(5, car.getEngineVolume());
-            updateStmt.setDate(6, java.sql.Date.valueOf(car.getRentDate()));
-            updateStmt.setDouble(7, car.getMileageStart());
-            updateStmt.setDate(8, java.sql.Date.valueOf(car.getFirstRegistrationDate()));
-            updateStmt.setDouble(9, car.getPriceOfFirstRegistration());
-            updateStmt.setInt(10, car.getDaysForReRegistration());
-            updateStmt.setDouble(11, car.getPrice());
-            updateStmt.setInt(12, car.getId()); // важливо: WHERE id = ?
-
-            int affectedRows = updateStmt.executeUpdate();
-            if (affectedRows == 0) {
-                System.err.println("Помилка: авто з ID " + car.getId() + " не знайдено.");
-            }
-        } catch (SQLException e) {
-            System.err.println("Error updating car: " + e.getMessage());
-        }
+        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ? WHERE id = ?";
+        try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, car.getVin());
+            ps.setString(2, car.getNumber());
+            ps.setInt(3, car.getYear());
+            ps.setString(4, car.getColor());
+            ps.setString(5, car.getDescription());
+            ps.setString(6, car.getModel());
+            ps.setString(7, car.getFuel());
+            ps.setDouble(8, car.getEngineVolume());
+            ps.setDate(9, Date.valueOf(car.getRentDate()));
+            ps.setDouble(10, car.getMileageStart());
+            ps.setDate(11, Date.valueOf(car.getFirstRegistrationDate()));
+            ps.setDouble(12, car.getPriceOfFirstRegistration());
+            ps.setDouble(13, car.getPrice());
+            ps.setBoolean(14, car.isValid());
+            ps.setInt(15, car.getId());
+            ps.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
     }
 
     public void deleteCarPermanentlyById(int id) {
@@ -370,23 +284,7 @@ public class CarUtil {
              ResultSet resultSet = statement.executeQuery()) {
 
             while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String vin = resultSet.getString("vin");
-                String number = resultSet.getString("number");
-                String model = resultSet.getString("model");
-                String fuel = resultSet.getString("fuel");
-                double engineVolume = resultSet.getDouble("engineVolume");
-                LocalDate rentDate = resultSet.getDate("rentdate").toLocalDate();
-                double mileageStart = resultSet.getDouble("mileageStart");
-                LocalDate firstRegistrationDate = resultSet.getDate("firstRegistrationDate").toLocalDate();
-                double priceOfFirstRegistration = resultSet.getDouble("priceOfFirstRegistration");
-                int daysForReRegistration = resultSet.getInt("daysForReRegistration");
-                double price = resultSet.getDouble("price");
-                boolean valid = resultSet.getBoolean("valid");
-
-                _Car car = new _Car(id, vin, number, model, fuel, engineVolume, rentDate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, daysForReRegistration, price, valid);
-
-                carNumbers.add(car.getBoxString());
+                carNumbers.add(mapResultSetToCar(resultSet).getBoxString());
             }
 
         } catch (Exception e) {
