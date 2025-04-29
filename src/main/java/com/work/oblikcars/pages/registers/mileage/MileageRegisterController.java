@@ -6,8 +6,8 @@ import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._List;
 import com.work.oblikcars.pages.MainPage;
+import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.registers.list.ListPeriodController;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -16,7 +16,6 @@ import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -87,10 +86,13 @@ public class MileageRegisterController extends WindowController {
             updateValues();
         });
 
-        settingsButton.setOnAction(event -> {
-            MileagePeriodController controller = new MileagePeriodController();
-            controller.openWindow(this);
+        settingsButton.setOnAction(e-> {
+            new PeriodController(
+                    "Реєстр: пройдений кілометраж — налаштування періоду",
+                    this::updateDates
+            ).openWindow();
         });
+
 
 
         TableColumn<_List, String> carCol = new TableColumn<>("Авто");

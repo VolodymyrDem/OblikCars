@@ -401,7 +401,9 @@ public class DBUtil {
                     `startmileage` DOUBLE NOT NULL,
                     `startdate`    DATE NOT NULL,
                     `endmileage`   DOUBLE,
-                    `enddate`      DATE,
+                    `enddate`      int,
+                    `rents`      int,
+                    `rentsNumber`      DATE,
                     `done`         TINYINT(1) DEFAULT 0 NOT NULL,
                     PRIMARY KEY (`id`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -1,6 +1,7 @@
 package com.work.oblikcars.pages.journals.list;
 
 import com.work.oblikcars.Utils.AlertsUtil;
+import com.work.oblikcars.Utils.AutoCompleteComboBoxListener;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.ListUtil;
 import com.work.oblikcars.Utils.PagesUtil;
@@ -29,6 +30,9 @@ public class ListCardController extends WindowController{
     private ComboBox<String> carField;
     private DatePicker startDatePicker;
     private TextField startMileageField;
+    private TextField rentDaysField;
+    private TextField rentsField;
+    private TextField incomeField;
 
     private DatePicker endDatePicker;
     private TextField endMileageField;
@@ -53,6 +57,9 @@ public class ListCardController extends WindowController{
         startMileageField = new TextField();
         endDatePicker = new DatePicker();
         endMileageField = new TextField();
+        incomeField  = new TextField();
+        rentDaysField = new TextField();
+        rentsField = new TextField();
 
         carField.setDisable(isClosing);
         startDatePicker.setDisable(isClosing);
@@ -71,12 +78,16 @@ public class ListCardController extends WindowController{
         Label carLabel = new Label("Авто");
         Label startDateLabel = new Label("Дата початку");
         Label startMileageLabel = new Label("Пробіг на початку");
-        Label endDateLabel = new Label("Дата кінця");
+        Label endDateLabel = new Label("Дата завершення");
         Label endMileageLabel = new Label("Пробіг у кінці");
+        Label rentDaysLabel = new Label("Кількість днів ренти");
+        Label rentsLabel = new Label("Кількість рент");
+        Label incomeLabel = new Label("Рентний дохід");
 
 
 
         carField.getItems().addAll(carMap.values());
+        new AutoCompleteComboBoxListener<>(carField);
 
         carField.setOnAction(e -> {
             String selectedCarString = carField.getValue();
@@ -106,6 +117,9 @@ public class ListCardController extends WindowController{
             if(selectedList.isDone()){
                 endDatePicker.setValue(selectedList.getEndDate());
                 endMileageField.setText(String.valueOf(selectedList.getEndMileage()));
+                rentsField.setText(String.valueOf(selectedList.getRents()));
+                rentDaysField.setText(String.valueOf(selectedList.getRentDays()));
+                incomeField.setText(String.valueOf(selectedList.getIncome()));
             }
         }
 
@@ -114,7 +128,10 @@ public class ListCardController extends WindowController{
                 startDateLabel, startDatePicker,
                 startMileageLabel, startMileageField,
                 endDateLabel, endDatePicker,
-                endMileageLabel, endMileageField
+                endMileageLabel, endMileageField,
+                rentsLabel, rentsField,
+                rentDaysLabel, rentDaysField,
+                incomeLabel, incomeField
         );
 
         javafx.scene.control.Button saveButton = new javafx.scene.control.Button("Зберегти");
@@ -171,6 +188,9 @@ public class ListCardController extends WindowController{
             list.setEndMileage(Double.parseDouble(endMileageField.getText()));
             list.setEndDate(endDatePicker.getValue());
             list.setDone(true);
+            list.setRentDays(Integer.parseInt(rentDaysField.getText()));
+            list.setRents(Integer.parseInt(rentsField.getText()));
+            list.setIncome(Double.parseDouble(incomeField.getText().replace(",", ".")));
         } else {
             list.setDone(false);
         }
@@ -181,17 +201,30 @@ public class ListCardController extends WindowController{
     private boolean checkInput() {
         if (carField.getValue() == null || carField.getValue().isBlank()) return true;
         if (startDatePicker.getValue() == null) return true;
-        if (isEmptyOrWhitespace(startMileageField.getText()) || !isDouble(startMileageField.getText())) return true;
+        if (isEmptyOrWhitespace(startMileageField.getText())
+                || !isDouble(startMileageField.getText())) return true;
 
-        boolean hasEndDate = endDatePicker.getValue() != null;
+        boolean hasEndDate    = endDatePicker.getValue() != null;
         boolean hasEndMileage = !isEmptyOrWhitespace(endMileageField.getText());
+        boolean hasRentDays   = !isEmptyOrWhitespace(rentDaysField.getText());
+        boolean hasRents      = !isEmptyOrWhitespace(rentsField.getText());
+        boolean hasIncome      = !isEmptyOrWhitespace(incomeField.getText());
 
-        if (hasEndDate ^ hasEndMileage) return true;
+        // Якщо хоч одне з кінцевих полів заповнене, але не всі — помилка
+        if ((hasEndDate || hasEndMileage || hasRentDays || hasRents)
+                && !(hasEndDate && hasEndMileage && hasRentDays && hasRents && hasIncome)) {
+            return true;
+        }
 
+        // Додаткова валідація форматів
         if (hasEndMileage && !isDouble(endMileageField.getText())) return true;
+        if (hasRentDays && !isInteger(rentDaysField.getText()))   return true;
+        if (hasRents && !isInteger(rentsField.getText()))         return true;
+        if(hasIncome && !isDouble(incomeField.getText().replace(",", ".")))   return true;
 
         return false;
     }
+
 
     private void addSelectedCarToMap(int carId) {
         if (!carMap.containsKey(carId)) {

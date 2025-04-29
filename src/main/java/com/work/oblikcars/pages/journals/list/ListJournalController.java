@@ -98,12 +98,30 @@ public class ListJournalController extends WindowController {
             return new ReadOnlyStringWrapper(value != 0 ? String.valueOf(value) : "");
         });
 
+        TableColumn<_List, String> rentsCol = new TableColumn<>("Кіл-ть рент");
+        rentsCol.setCellValueFactory(cellData -> {
+            return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf(cellData.getValue().getRents()):"");
+        });
 
-        TableColumn<_List, LocalDate> endDateCol = new TableColumn<>("Дата кінця");
+        TableColumn<_List, String> rentDaysCol = new TableColumn<>("Кіль-ть днів у ренті");
+        rentDaysCol.setCellValueFactory(cellData -> {
+            return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf(cellData.getValue().getRentDays()):"");
+        });
+
+        TableColumn<_List, LocalDate> endDateCol = new TableColumn<>("Дата завершення");
         endDateCol.setCellValueFactory(new PropertyValueFactory<>("endDate"));
 
+        TableColumn<_List, String> incomeCol = new TableColumn<>("Рентний дохід");
+        incomeCol.setCellValueFactory(cellData -> {
+            return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf(cellData.getValue().getIncome()):"");
+        });
 
-        listsTable.getColumns().addAll(carCol, startDateCol, startMileageCol, endDateCol, endMileageCol);
+        TableColumn<_List, String> avgMilCol = new TableColumn<>("Середній пробіг за день ренти");
+        avgMilCol.setCellValueFactory(cellData -> {
+            return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf((cellData.getValue().getEndMileage() -  cellData.getValue().getStartMileage())/cellData.getValue().getRentDays()):"");
+        });
+
+        listsTable.getColumns().addAll(carCol, startDateCol, startMileageCol, endDateCol, endMileageCol, rentsCol, rentDaysCol, avgMilCol, incomeCol);
 
         listsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;

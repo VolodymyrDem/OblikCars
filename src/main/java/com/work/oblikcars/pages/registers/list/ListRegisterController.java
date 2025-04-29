@@ -8,6 +8,7 @@ import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._List;
 import com.work.oblikcars.pages.MainPage;
+import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
 import com.work.oblikcars.pages.journals.list.ListCardController;
 import javafx.application.Platform;
@@ -73,7 +74,7 @@ public class ListRegisterController extends WindowController {
         carField.setMaxWidth(200);
         carField.setMinWidth(200);
         carField.getItems().addAll(carMap.values());
-
+        //todo add new AutoCompleteComboBoxListener<>(carField); but for checkcombobox
         filterButton.getStyleClass().add("uniform-button");
         saveButton.getStyleClass().add("uniform-button");
 
@@ -90,10 +91,14 @@ public class ListRegisterController extends WindowController {
             updateValues();
         });
 
-        settingsButton.setOnAction(event -> {
-            ListPeriodController controller = new ListPeriodController();
-            controller.openWindow(this);
+        settingsButton.setOnAction(e-> {
+            new PeriodController(
+                    "Реєстр: подорожні листи — налаштування періоду",
+                    this::updateDates
+            ).openWindow();
         });
+
+
 
 
         TableColumn<_List, String> carCol = new TableColumn<>("Авто");
@@ -116,7 +121,7 @@ public class ListRegisterController extends WindowController {
         });
 
 
-        TableColumn<_List, LocalDate> endDateCol = new TableColumn<>("Дата кінця");
+        TableColumn<_List, LocalDate> endDateCol = new TableColumn<>("Дата завершення");
         endDateCol.setCellValueFactory(new PropertyValueFactory<>("endDate"));
 
 

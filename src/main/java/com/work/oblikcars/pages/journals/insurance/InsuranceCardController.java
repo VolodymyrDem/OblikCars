@@ -1,6 +1,7 @@
 package com.work.oblikcars.pages.journals.insurance;
 
 import com.work.oblikcars.Utils.AlertsUtil;
+import com.work.oblikcars.Utils.AutoCompleteComboBoxListener;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.InsuranceUtil;
 import com.work.oblikcars.Utils.PagesUtil;
@@ -63,6 +64,7 @@ public class InsuranceCardController extends WindowController {
         Label priceLabel = new Label("Ціна");
 
         carField.getItems().addAll(carMap.values());
+        new AutoCompleteComboBoxListener<>(carField);
 
         if(selectedInsurance != null){
             id = selectedInsurance.getId();

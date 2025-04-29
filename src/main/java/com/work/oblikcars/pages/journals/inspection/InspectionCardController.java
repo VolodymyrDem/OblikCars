@@ -1,6 +1,7 @@
 package com.work.oblikcars.pages.journals.inspection;
 
 import com.work.oblikcars.Utils.AlertsUtil;
+import com.work.oblikcars.Utils.AutoCompleteComboBoxListener;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.InspectionUtil;
 import com.work.oblikcars.Utils.PagesUtil;
@@ -8,10 +9,14 @@ import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._Inspection;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.textfield.TextFields;
 
+import java.util.List;
 import java.util.Map;
 
 public class InspectionCardController extends WindowController {
@@ -43,6 +48,7 @@ public class InspectionCardController extends WindowController {
         carUtil = CarUtil.getInstance();
 
         carField = new ComboBox<>();
+
         priceField = new TextField();
         mileageField = new TextField();
         descriptionField = new TextArea();
@@ -54,7 +60,8 @@ public class InspectionCardController extends WindowController {
         if (selectedInspection != null) {
             addSelectedCarToMap(selectedInspection.getCarId());
         }
-
+        carField.getItems().addAll(carMap.values());
+        new AutoCompleteComboBoxListener<>(carField);
         inspectionUtil = InspectionUtil.getInstance();
         inspectionJournalController = journal;
         grid = new GridPane();
@@ -64,7 +71,8 @@ public class InspectionCardController extends WindowController {
         Label priceLabel = new Label("Ціна");
         Label descriptionLabel = new Label("Опис");
 
-        carField.getItems().addAll(carMap.values());
+
+
 
         if(selectedInspection != null){
             id = selectedInspection.getId();

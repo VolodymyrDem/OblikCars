@@ -8,6 +8,7 @@ import com.work.oblikcars.pages.journals.inspection.InspectionJournalController;
 import com.work.oblikcars.pages.journals.insurance.InsuranceJournalController;
 import com.work.oblikcars.pages.journals.list.ListJournalController;
 import com.work.oblikcars.pages.journals.registration.RegistrationJournalController;
+import com.work.oblikcars.pages.registers.car.CarRegisterController;
 import com.work.oblikcars.pages.registers.list.ListRegisterController;
 import com.work.oblikcars.pages.registers.mileage.MileageRegisterController;
 import com.work.oblikcars.pages.users.UsersController;
@@ -124,11 +125,13 @@ public class MainPage {
         MenuItem listRegister = new MenuItem("Реєстр подорожніх листів");
         MenuItem mileageRegister = new MenuItem("Реєстр пройденого кілометражу");
         MenuItem spentRegister = new MenuItem("Реєстр супутніх затрат");
+        MenuItem carRegister = new MenuItem("Реєстр транспортних засобів");
 
         spentRegister.setOnAction(e -> openSpentRegister());
+        carRegister.setOnAction(e -> openCarRegister());
         mileageRegister.setOnAction(e -> openMileageRegister());
         listRegister.setOnAction(e -> openListRegister());
-        RegisterMenu.getItems().addAll(listRegister, mileageRegister, spentRegister);
+        RegisterMenu.getItems().addAll(listRegister, mileageRegister, spentRegister, carRegister);
 
         menuBar.getMenus().addAll(handbookMenu, JournalMenu, RegisterMenu);
 
@@ -231,6 +234,10 @@ public class MainPage {
     private void openSpentRegister() {}
     private void openListRegister() {
         ListRegisterController controller = new ListRegisterController();
+        controller.openWindow();
+    }
+    private void openCarRegister(){
+        CarRegisterController controller = new CarRegisterController();
         controller.openWindow();
     }
 

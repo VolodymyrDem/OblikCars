@@ -59,3 +59,21 @@ Launcher:	C:\Program Files\Java\jdk-23\bin\javaw.exe
 Launcher args:	-jar "C:\Users\Volodymyr\Desktop\OblikCars\out\artifacts\OblikCars_jar\program.exe"
 Args length:	83/32768 chars
 Exit code:	0
+
+
+Version:	3.50
+CmdLine:	C:\Users\Volodymyr\Desktop\projects\OblikCars\out\artifacts\OblikCars_jar\program.exe --l4j-debug
+JNI:		No
+WOW64:		Yes
+Working dir:	C:\Users\Volodymyr\Desktop\projects\OblikCars\out\artifacts\OblikCars_jar\.
+Requires JDK:	No
+Requires 64-Bit: No
+Java min ver:	
+Java max ver:	
+JRE paths:	C:\Program Files\Java\jdk-23
+Check launcher:	C:\Program Files\Java\jdk-23\bin\javaw.exe (OK)
+Version string: 1.023.000_002 / 64-Bit (OK)
+Launcher:	C:\Program Files\Java\jdk-23\bin\javaw.exe
+Launcher args:	-jar "C:\Users\Volodymyr\Desktop\projects\OblikCars\out\artifacts\OblikCars_jar\program.exe"
+Args length:	92/32768 chars
+Exit code:	0

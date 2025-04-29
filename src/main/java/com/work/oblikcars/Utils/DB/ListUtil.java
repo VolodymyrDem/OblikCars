@@ -36,7 +36,10 @@ public class ListUtil {
                 if (done) {
                     double endMileage = resultSet.getDouble("endmileage");
                     LocalDate endDate = resultSet.getDate("enddate").toLocalDate();
-                    list = new _List(id, carId, startMileage, startDate, endMileage, endDate, done);
+                    int  rents = resultSet.getInt("rents");
+                    int rentDays = resultSet.getInt("rentDays");
+                    double income = resultSet.getDouble("income");
+                    list = new _List(id, carId, startMileage, startDate, endMileage, endDate, rents, rentDays, done, income);
                 } else {
                     list = new _List(id, carId, startMileage, startDate, done);
                 }
@@ -80,7 +83,12 @@ public class ListUtil {
                     if (done) {
                         double endMileage = resultSet.getDouble("endmileage");
                         LocalDate eDate = resultSet.getDate("enddate").toLocalDate();
-                        list = new _List(id, carId, startMileage, sDate, endMileage, eDate, true);
+
+                        int  rents = resultSet.getInt("rents");
+                        int rentDays = resultSet.getInt("rentDays");
+
+                        double income = resultSet.getDouble("income");
+                        list = new _List(id, carId, startMileage, startDate, endMileage, eDate, rents, rentDays, done, income);
                     } else {
                         list = new _List(id, carId, startMileage, sDate, false);
                     }
@@ -137,7 +145,10 @@ public class ListUtil {
                 if (done) {
                     double endMileage = rs.getDouble("endmileage");
                     LocalDate eDate = rs.getDate("enddate").toLocalDate();
-                    list = new _List(id, carId, startMileage, sDate, endMileage, eDate, true);
+                    int  rents = rs.getInt("rents");
+                    int rentDays = rs.getInt("rentDays");
+                    double income = rs.getDouble("income");
+                    list = new _List(id, carId, startMileage, startDate, endMileage, eDate, rents, rentDays, done, income);
                 } else {
                     list = new _List(id, carId, startMileage, sDate, false);
                 }
@@ -154,9 +165,9 @@ public class ListUtil {
 
 
     public void addList(_List list) {
-        String sql = (list.isDone())?"INSERT INTO lists (carid, startmileage, startdate, endmileage, enddate, done)\n" +
+        String sql = (list.isDone())?"INSERT INTO lists (carid, startmileage, startdate, endmileage, enddate, done, income, rents, rentDays)\n" +
                 "VALUES" +
-                "(?, ?, ?, ?, ?, ?)":"INSERT INTO lists (carid, startmileage, startdate, done)\n" +
+                "(?, ?, ?, ?, ?, ?, ?, ?, ?)":"INSERT INTO lists (carid, startmileage, startdate, done)\n" +
                 "VALUES" +
                 "(?, ?, ?, ?)";
 
@@ -170,6 +181,11 @@ public class ListUtil {
                 insertStmt.setDouble(4, list.getEndMileage());
                 insertStmt.setDate(5, java.sql.Date.valueOf(list.getEndDate()));
                 insertStmt.setBoolean(6, list.isDone());
+                insertStmt.setDouble(7, list.getIncome());
+                insertStmt.setInt(8, list.getRents());
+                insertStmt.setInt(9, list.getRentDays());
+
+
             } else {
                 insertStmt.setBoolean(4, list.isDone());
             }
@@ -181,7 +197,7 @@ public class ListUtil {
     }
 
     public void editList(_List list) {
-        String sql =(list.isDone())? "UPDATE lists SET carid = ?, startmileage = ?, startdate = ?, endmileage = ?, enddate = ?, done = ?" +
+        String sql =(list.isDone())? "UPDATE lists SET carid = ?, startmileage = ?, startdate = ?, endmileage = ?, enddate = ?, done = ?, income = ?, rents = ?, rentDays = ?" +
                 " WHERE id = ?":"UPDATE lists SET carid = ?, startmileage = ?, startdate = ?, done = ?" +
                 " WHERE id = ?";
 
@@ -195,7 +211,10 @@ public class ListUtil {
                 updateStmt.setDouble(4, list.getEndMileage());
                 updateStmt.setDate(5, java.sql.Date.valueOf(list.getEndDate()));
                 updateStmt.setBoolean(6, list.isDone());
-                updateStmt.setInt(7, list.getId());
+                updateStmt.setDouble(7, list.getIncome());
+                updateStmt.setInt(8, list.getRents());
+                updateStmt.setInt(9, list.getRentDays());
+                updateStmt.setInt(10, list.getId());
             } else {
                 updateStmt.setBoolean(4, list.isDone());
                 updateStmt.setInt(5, list.getId());

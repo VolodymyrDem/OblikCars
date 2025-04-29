@@ -1,7 +1,10 @@
 package com.work.oblikcars.Utils;
 
 import javafx.scene.Node;
+import javafx.scene.control.ComboBox;
 import javafx.scene.layout.GridPane;
+
+import java.util.Map;
 
 public class PagesUtil {
 
@@ -14,6 +17,14 @@ public class PagesUtil {
             instance = new PagesUtil();
         }
         return instance;
+    }
+
+    public ComboBox<String>  getCarField(Map<Integer, String> carMap) {
+        ComboBox<String> carField =  new ComboBox<>();
+        carField.getItems().addAll(carMap.values());
+        carField.setEditable(true);
+        carField.setEditable(true);
+        return carField;
     }
 
     public static GridPane buildGridDouble(Node... elements) {

@@ -23,11 +23,11 @@ public abstract class WindowController {
         return text == null || text.trim().isEmpty();
     }
 
-    protected boolean isInteger(String text) {
+    protected boolean isInteger(String s) {
         try {
-            Integer.parseInt(text);
+            Integer.parseInt(s);
             return true;
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             return false;
         }
     }

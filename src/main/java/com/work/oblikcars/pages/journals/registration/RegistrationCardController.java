@@ -1,6 +1,7 @@
 package com.work.oblikcars.pages.journals.registration;
 
 import com.work.oblikcars.Utils.AlertsUtil;
+import com.work.oblikcars.Utils.AutoCompleteComboBoxListener;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.RegistrationUtil;
 import com.work.oblikcars.Utils.PagesUtil;
@@ -60,6 +61,7 @@ public class RegistrationCardController extends WindowController {
         Label priceLabel = new Label("Ціна");
 
         carField.getItems().addAll(carMap.values());
+        new AutoCompleteComboBoxListener<>(carField);
 
         if(selectedRegistration != null){
             id = selectedRegistration.getId();

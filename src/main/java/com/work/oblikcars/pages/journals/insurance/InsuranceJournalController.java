@@ -84,7 +84,7 @@ public class InsuranceJournalController extends WindowController {
         TableColumn<_Insurance, LocalDate> startDateCol = new TableColumn<>("Дата початку");
         startDateCol.setCellValueFactory(new PropertyValueFactory<>("startDate"));
 
-        TableColumn<_Insurance, LocalDate> endDateCol = new TableColumn<>("Дата кінця");
+        TableColumn<_Insurance, LocalDate> endDateCol = new TableColumn<>("Дата завершення");
         endDateCol.setCellValueFactory(new PropertyValueFactory<>("endDate"));
 
         TableColumn<_Insurance, LocalDate> priceCol = new TableColumn<>("Ціна");
