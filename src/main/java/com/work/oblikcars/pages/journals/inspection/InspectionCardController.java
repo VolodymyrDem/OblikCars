@@ -66,7 +66,7 @@ public class InspectionCardController extends WindowController {
         inspectionJournalController = journal;
         grid = new GridPane();
 
-        Label carLabel = new Label("Авто");
+        Label carLabel = new Label("Транспортний засіб");
         Label mileageLabel = new Label("Пробіг");
         Label priceLabel = new Label("Ціна");
         Label descriptionLabel = new Label("Опис");

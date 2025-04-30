@@ -33,7 +33,7 @@ public class CarsHandbookController extends WindowController {
     public CarsHandbookController(){}
 
     public void openWindow(){
-        String windowTitle = "Довідник: автомобілі";
+        String windowTitle = "Довідник: транспортні засоби";
         mainPage = MainPage.getInstance();
         
         if(mainPage.checkOpenWindow(windowTitle))return;
@@ -42,16 +42,16 @@ public class CarsHandbookController extends WindowController {
         carsTable = new TableView<>();
         cars = FXCollections.observableArrayList();
 
-        Button addButton = new Button("Додати авто");
+        Button addButton = new Button("Додати транспортний засіб");
         addButton.setGraphic(IconsUtil.getPlusIcon());
         addButton.getStyleClass().add("green-button");
 
-        Button editButton = new Button("Редагувати авто");
+        Button editButton = new Button("Редагувати транспортний засіб");
         editButton.setGraphic(IconsUtil.getPencilIcon());
         editButton.setDisable(true);
         editButton.getStyleClass().add("yellow-button");
 
-        Button deleteButton = new Button("Видалити авто");
+        Button deleteButton = new Button("Видалити транспортний засіб");
         deleteButton.setGraphic(IconsUtil.getRubbishIcon());
         deleteButton.setDisable(true);
         deleteButton.getStyleClass().add("red-button");
@@ -103,8 +103,13 @@ public class CarsHandbookController extends WindowController {
         TableColumn<_Car, String> priceOfFirstRegistrationCol = new TableColumn<>("Ціна першої реєстрації");
         priceOfFirstRegistrationCol.setCellValueFactory(new PropertyValueFactory<>("priceOfFirstRegistration"));
 
-        TableColumn<_Car, String> priceCol = new TableColumn<>("Ціна авто");
+        TableColumn<_Car, String> priceCol = new TableColumn<>("Ціна транспортного засобу");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
+
+        TableColumn<_Car, String> removeDateCol = new TableColumn<>("Дата зняття з експлуатації");
+        removeDateCol.setCellValueFactory(cellData -> {
+            return new ReadOnlyStringWrapper(cellData.getValue().isValid() ? "" : String.valueOf(cellData.getValue().getRemoveDate()));
+        });
 
         TableColumn<_Car, String> actualCol = new TableColumn<>("Актуальність");
         actualCol.setCellValueFactory(cellData -> {
@@ -113,7 +118,7 @@ public class CarsHandbookController extends WindowController {
 
 
         carsTable.getColumns().addAll(vinCol, numberCol,colorCol, modelCol,yearCol, fuelCol, engineVolumeCol, rentDateCol,
-                mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol,descriptionCol,  actualCol);
+                mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol,descriptionCol, removeDateCol, actualCol);
 
         carsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;
@@ -141,7 +146,7 @@ public class CarsHandbookController extends WindowController {
         deleteButton.setOnAction(e->{
             _Car selectedCar = carsTable.getSelectionModel().getSelectedItem();
             if (selectedCar != null) {
-                Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити авто");
+                Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити транспортний засіб");
                 confirmationAlert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
                         carUtil.markCarAsInvalid(selectedCar);

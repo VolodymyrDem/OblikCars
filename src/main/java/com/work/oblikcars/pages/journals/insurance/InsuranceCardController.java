@@ -58,7 +58,7 @@ public class InsuranceCardController extends WindowController {
         insuranceJournalController = journal;
         grid = new GridPane();
 
-        Label carLabel = new Label("Авто");
+        Label carLabel = new Label("Транспортний засіб");
         Label startDateLabel = new Label("Дата початку");
         Label endDateLabel = new Label("Дата закінчення");
         Label priceLabel = new Label("Ціна");

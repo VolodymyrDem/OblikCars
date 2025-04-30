@@ -1,5 +1,6 @@
 package com.work.oblikcars.Utils.DB;
 
+import com.work.oblikcars.model.CarReportRow;
 import com.work.oblikcars.model._Car;
 
 import java.sql.*;
@@ -22,7 +23,8 @@ public class CarUtil {
     }
 
     private _Car mapResultSetToCar(ResultSet rs) throws SQLException {
-        return new _Car(
+
+        _Car car =  new _Car(
                 rs.getInt("id"),
                 rs.getString("vin"),
                 rs.getString("number"),
@@ -39,6 +41,11 @@ public class CarUtil {
                 rs.getDouble("price"),
                 rs.getBoolean("valid")
         );
+        if(!rs.getBoolean("valid")) {
+            car.setRemoveDate(rs.getDate("removeDate").toLocalDate()
+            );
+        }
+        return car;
     }
 
     public List<_Car> getAllCars() {
@@ -207,7 +214,9 @@ public class CarUtil {
     }
 
     public void addCar(_Car car) {
-        String sql = "INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = car.isValid()?"INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)":
+                                   "INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, removeDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
         try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, car.getVin());
             ps.setString(2, car.getNumber());
@@ -223,12 +232,15 @@ public class CarUtil {
             ps.setDouble(12, car.getPriceOfFirstRegistration());
             ps.setDouble(13, car.getPrice());
             ps.setBoolean(14, car.isValid());
+            if(!car.isValid())
+                ps.setDate(15, Date.valueOf(car.getRemoveDate()));
+
             ps.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
     public void editCar(_Car car) {
-        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ? WHERE id = ?";
+        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ?, removeDate = ? WHERE id = ?";
         try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, car.getVin());
             ps.setString(2, car.getNumber());
@@ -244,7 +256,8 @@ public class CarUtil {
             ps.setDouble(12, car.getPriceOfFirstRegistration());
             ps.setDouble(13, car.getPrice());
             ps.setBoolean(14, car.isValid());
-            ps.setInt(15, car.getId());
+            ps.setDate(15, car.isValid()?null:Date.valueOf(car.getRemoveDate()));
+            ps.setInt(16, car.getId());
             ps.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
@@ -259,7 +272,7 @@ public class CarUtil {
             int affectedRows = deleteStmt.executeUpdate();
 
             if (affectedRows == 0) {
-                System.err.println("Авто з ID " + id + " не знайдено.");
+                System.err.println("Транспортний засіб з ID " + id + " не знайдено.");
             }
         } catch (SQLException e) {
             System.err.println("Error deleting car: " + e.getMessage());
@@ -320,12 +333,78 @@ public class CarUtil {
             int affectedRows = updateStmt.executeUpdate();
 
             if (affectedRows == 0) {
-                System.err.println("Не знайдено авто з ID " + id + " для деактивації.");
+                System.err.println("Не знайдено Транспортний засіб з ID " + id + " для деактивації.");
             }
         } catch (SQLException e) {
-            System.err.println("Помилка при деактивації авто: " + e.getMessage());
+            System.err.println("Помилка при деактивації Транспортний засіб: " + e.getMessage());
         }
     }
+
+
+    public List<CarReportRow> getCarReportRows(LocalDate reportDate) {
+        List<CarReportRow> rows = new ArrayList<>();
+        String sql = """
+        SELECT
+          c.id,
+          c.model,
+          c.color,
+          c.number,
+          c.year,
+          c.price,
+          c.rentdate,
+          c.mileageStart
+        FROM cars c
+        WHERE c.rentdate <= ?
+          AND (c.removeDate IS NULL OR c.removeDate >= ?)
+        ORDER BY c.id
+        """;
+
+        Date dt = Date.valueOf(reportDate);
+        try (Connection conn = Connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDate(1, dt);
+            ps.setDate(2, dt);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                int idx = 1;
+                while (rs.next()) {
+                    int carId         = rs.getInt("id");
+                    String model      = rs.getString("model");
+                    String color      = rs.getString("color");
+                    String number     = rs.getString("number");
+                    int year          = rs.getInt("year");
+                    double price      = rs.getDouble("price");
+                    LocalDate rentDt  = rs.getDate("rentdate").toLocalDate();
+                    double startMiles = rs.getDouble("mileageStart");
+
+                    // Останній зафіксований пробіг з таблиці lists
+                    double lastMiles = getCurrentMileage(carId);
+                    double rentalMiles = lastMiles - startMiles;
+                    if (rentalMiles < 0) rentalMiles = 0.0;
+
+                    // Статус "передано в рент" — rentdate ≤ reportDate
+                    boolean rented = !rentDt.isAfter(reportDate);
+
+                    rows.add(new CarReportRow(
+                            idx++,
+                            model,
+                            color,
+                            number,
+                            year,
+                            price,
+                            rented ? "Так" : "Ні",
+                            rentalMiles
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return rows;
+    }
+
 
     public void markCarAsInvalid(_Car car) {
         if (car != null) {

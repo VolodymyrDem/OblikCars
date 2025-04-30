@@ -58,7 +58,7 @@ public class ListRegisterController extends WindowController {
 
         carMap = carUtil.getAllCarComboMap(true);
 
-        Label carLabel = new Label("Авто:");
+        Label carLabel = new Label("Транспортний засіб:");
         Label timeLabel = new Label("Період: з ");
         Label timeLabel2 = new Label("по");
         Button filterButton = new Button("Застосувати фільтр");
@@ -101,7 +101,7 @@ public class ListRegisterController extends WindowController {
 
 
 
-        TableColumn<_List, String> carCol = new TableColumn<>("Авто");
+        TableColumn<_List, String> carCol = new TableColumn<>("Транспортний засіб");
         carCol.setCellValueFactory(cellData -> {
             _Car car = carUtil.getCarById(cellData.getValue().getCarId());
             String boxString = (car != null) ? car.getBoxString() : "Невідомо";

@@ -10,6 +10,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
+import java.time.LocalDate;
+
 public class CarCardController extends WindowController {
     private MainPage mainPage;
     private CarUtil carUtil;
@@ -28,6 +30,7 @@ public class CarCardController extends WindowController {
     private String windowTitle;
     private TextField yearField;
     private TextField colorField;
+    private DatePicker removeDatePicker;
     private TextArea descriptionField;
     private CarsHandbookController carsHandbookController;
     private int id;
@@ -35,7 +38,7 @@ public class CarCardController extends WindowController {
     public CarCardController(){}
 
     public void openWindow(CarsHandbookController handbook, _Car selectedCar) {
-        windowTitle = (selectedCar == null)?"Довідник: автомобілі - додати авто" : "Довідник: автомобілі - редагувати авто";
+        windowTitle = (selectedCar == null)?"Довідник: транспортні засоби - додати транспортний засіб" : "Довідник: транспортні засоби- редагувати транспортний засіб";
         mainPage = MainPage.getInstance();
 
         if(mainPage.checkOpenWindow(windowTitle))return;
@@ -53,10 +56,11 @@ public class CarCardController extends WindowController {
         Label mileageStartLabel = new Label("Пробіг на початку");
         Label firstRegistrationDateLabel = new Label("Дата першої реєстрації");
         Label priceOfFirstRegistrationLabel = new Label("Ціна першої реєстрації");
-        Label priceLabel = new Label("Ціна авто");
+        Label priceLabel = new Label("Ціна транспортного засобу");
         Label yearLabel = new Label("Рік випуску");
         Label colorLabel = new Label("Колір");
         Label descriptionLabel = new Label("Опис");
+        Label removeDateLabel = new Label("Дата зняття з експлуатації");
 
         validCheckBox = new CheckBox("Валідність");
         yearField = new TextField();
@@ -73,7 +77,8 @@ public class CarCardController extends WindowController {
         firstRegistrationDatePicker = new DatePicker();
         priceOfFirstRegistrationField = new TextField();
         priceField = new TextField();
-
+        removeDatePicker = new DatePicker();
+        removeDatePicker.setDisable(true);
         if(selectedCar != null){
             yearField.setText(String.valueOf(selectedCar.getYear()));
             colorField.setText(selectedCar.getColor());
@@ -91,11 +96,28 @@ public class CarCardController extends WindowController {
             priceField.setText(String.valueOf(selectedCar.getPrice()));
             validCheckBox.setSelected(selectedCar.isValid());
             validCheckBox.setDisable(false);
+            if(!selectedCar.isValid()){
+                removeDatePicker.setDisable(false);
+            }
+            if(selectedCar.getRemoveDate() != null){
+                removeDatePicker.setValue(selectedCar.getRemoveDate());
+            }
         }
         else {
             validCheckBox.setSelected(true);
             validCheckBox.setDisable(true);
         }
+
+        validCheckBox.setOnAction(event -> {
+            if(validCheckBox.isSelected()){
+                removeDatePicker.setValue(null);
+                removeDatePicker.setDisable(true);
+            }
+            else {
+                removeDatePicker.setValue(LocalDate.now());
+                removeDatePicker.setDisable(false);
+            }
+        });
 
         grid = PagesUtil.buildGridDouble(
                 vinLabel, vinField,
@@ -110,7 +132,8 @@ public class CarCardController extends WindowController {
                 firstRegistrationDateLabel, firstRegistrationDatePicker,
                 priceOfFirstRegistrationLabel, priceOfFirstRegistrationField,
                 priceLabel, priceField,
-                descriptionLabel, descriptionField
+                descriptionLabel, descriptionField,
+                removeDateLabel, removeDatePicker
         );
 
 
@@ -132,7 +155,7 @@ public class CarCardController extends WindowController {
             AlertsUtil.ErrorAlert("Помилка вводу", "Введіть усі необхідні дані").showAndWait();
         } else {
             try {
-                AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати авто" : "Додати авто").showAndWait().ifPresent(response -> {
+                AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати транспортний засіб" : "Додати транспортний засіб").showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
                         _Car car = createCar();
                         if(isEditing){
@@ -140,7 +163,7 @@ public class CarCardController extends WindowController {
                             carUtil.editCar(car);
                         }
                         else
-                            carUtil.addCar(createCar());
+                            carUtil.addCar(car);
 
                         mainPage.closeInternalWindow(windowTitle);
                         carsHandbookController.updateValues();
@@ -168,6 +191,9 @@ public class CarCardController extends WindowController {
         car.setColor(colorField.getText());
         car.setDescription(descriptionField.getText());
         car.setValid(validCheckBox.isSelected());
+        if(!validCheckBox.isSelected()){
+            car.setRemoveDate(removeDatePicker.getValue());
+        }
         return car;
     }
 

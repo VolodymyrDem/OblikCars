@@ -102,7 +102,7 @@ public class MainPage {
 
         Menu handbookMenu = new Menu("Довідники");
 
-        MenuItem carsHandbook = new MenuItem("Довідник автомобілів");
+        MenuItem carsHandbook = new MenuItem("Довідник транспортних засобів");
         carsHandbook.setOnAction(e -> openСarsHandbook());
 
         handbookMenu.getItems().addAll(carsHandbook);

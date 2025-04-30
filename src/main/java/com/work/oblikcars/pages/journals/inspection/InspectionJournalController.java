@@ -76,7 +76,7 @@ public class InspectionJournalController extends WindowController {
         updateButton.getStyleClass().add("uniform-button");
 
 
-        TableColumn<_Inspection, String> carCol = new TableColumn<>("Авто");
+        TableColumn<_Inspection, String> carCol = new TableColumn<>("Транспортний засіб");
         carCol.setCellValueFactory(cellData -> {
             _Car car = carUtil.getCarById(cellData.getValue().getCarId());
             String boxString = (car != null) ? car.getBoxString() : "Невідомо";

@@ -75,7 +75,7 @@ public class ListCardController extends WindowController{
         listJournalController = journal;
         grid = new GridPane();
 
-        Label carLabel = new Label("Авто");
+        Label carLabel = new Label("Транспортний засіб");
         Label startDateLabel = new Label("Дата початку");
         Label startMileageLabel = new Label("Пробіг на початку");
         Label endDateLabel = new Label("Дата завершення");

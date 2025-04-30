@@ -56,7 +56,7 @@ public class RegistrationCardController extends WindowController {
         registrationJournalController = journal;
         grid = new GridPane();
 
-        Label carLabel = new Label("Авто");
+        Label carLabel = new Label("Транспортний засіб");
         Label startDateLabel = new Label("Дата");
         Label priceLabel = new Label("Ціна");
 

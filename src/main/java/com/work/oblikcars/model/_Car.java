@@ -18,9 +18,12 @@ public class _Car {
     private double priceOfFirstRegistration;
     private double price;
     private boolean valid;
+    private LocalDate removeDate;
 
     public _Car() {
     }
+
+
 
     public String getBoxString() {
         return number + " " + model;
@@ -119,6 +122,14 @@ public class _Car {
 
     public LocalDate getRentDate() {
         return rentDate;
+    }
+
+    public LocalDate getRemoveDate() {
+        return removeDate;
+    }
+
+    public void setRemoveDate(LocalDate removeDate) {
+        this.removeDate = removeDate;
     }
 
     public void setRentDate(LocalDate rentDate) {

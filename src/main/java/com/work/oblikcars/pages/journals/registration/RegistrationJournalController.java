@@ -74,7 +74,7 @@ public class RegistrationJournalController extends WindowController {
         DeleteButton.getStyleClass().add("uniform-button");
         updateButton.getStyleClass().add("uniform-button");
 
-        TableColumn<_Registration, String> carCol = new TableColumn<>("Авто");
+        TableColumn<_Registration, String> carCol = new TableColumn<>("Транспортний засіб");
         carCol.setCellValueFactory(cellData -> {
             _Car car = carUtil.getCarById(cellData.getValue().getCarId());
             String boxString = (car != null) ? car.getBoxString() : "Невідомо";
