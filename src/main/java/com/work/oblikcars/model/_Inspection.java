@@ -3,24 +3,24 @@ package com.work.oblikcars.model;
 public class _Inspection {
     private int id;
     private int carId;
-    private double mileage;
+    private WorkType workType;
     private double price;
     private String description;
 
     public _Inspection() {
     }
 
-    public _Inspection(int id, int carId, double mileage, double price, String description) {
+    public _Inspection(int id, int carId, WorkType workType, double price, String description) {
         this.id = id;
         this.carId = carId;
-        this.mileage = mileage;
+        this.workType = workType;
         this.price = price;
         this.description = description;
     }
 
-    public _Inspection(int carId, double mileage, double price, String description) {
+    public _Inspection(int carId, WorkType workType, double price, String description) {
         this.carId = carId;
-        this.mileage = mileage;
+        this.workType = workType;
         this.price = price;
         this.description = description;
     }
@@ -41,12 +41,12 @@ public class _Inspection {
         this.carId = carId;
     }
 
-    public double getMileage() {
-        return mileage;
+    public WorkType getWorkType() {
+        return workType;
     }
 
-    public void setMileage(double mileage) {
-        this.mileage = mileage;
+    public void setWorkType(WorkType workType) {
+        this.workType = workType;
     }
 
     public double getPrice() {

@@ -33,15 +33,16 @@ public class ListUtil {
                 double startMileage = resultSet.getDouble("startmileage");
                 LocalDate startDate = resultSet.getDate("startdate").toLocalDate();
                 boolean done = resultSet.getBoolean("done");
+                String description = resultSet.getString("description");
                 if (done) {
                     double endMileage = resultSet.getDouble("endmileage");
                     LocalDate endDate = resultSet.getDate("enddate").toLocalDate();
                     int  rents = resultSet.getInt("rents");
                     int rentDays = resultSet.getInt("rentDays");
                     double income = resultSet.getDouble("income");
-                    list = new _List(id, carId, startMileage, startDate, endMileage, endDate, rents, rentDays, done, income);
+                    list = new _List(id, carId, startMileage, startDate, endMileage, endDate, rents, rentDays, done, income, description);
                 } else {
-                    list = new _List(id, carId, startMileage, startDate, done);
+                    list = new _List(id, carId, startMileage, startDate, done, description);
                 }
                 lists.add(list);
             }
@@ -79,7 +80,7 @@ public class ListUtil {
                     double startMileage = resultSet.getDouble("startmileage");
                     LocalDate sDate = resultSet.getDate("startdate").toLocalDate();
                     boolean done = resultSet.getBoolean("done");
-
+                    String description = resultSet.getString("description");
                     if (done) {
                         double endMileage = resultSet.getDouble("endmileage");
                         LocalDate eDate = resultSet.getDate("enddate").toLocalDate();
@@ -88,9 +89,9 @@ public class ListUtil {
                         int rentDays = resultSet.getInt("rentDays");
 
                         double income = resultSet.getDouble("income");
-                        list = new _List(id, carId, startMileage, startDate, endMileage, eDate, rents, rentDays, done, income);
+                        list = new _List(id, carId, startMileage, startDate, endMileage, eDate, rents, rentDays, done, income, description);
                     } else {
-                        list = new _List(id, carId, startMileage, sDate, false);
+                        list = new _List(id, carId, startMileage, sDate, false, description);
                     }
 
                     lists.add(list);
@@ -140,7 +141,7 @@ public class ListUtil {
                 double startMileage = rs.getDouble("startmileage");
                 LocalDate sDate = rs.getDate("startdate").toLocalDate();
                 boolean done = rs.getBoolean("done");
-
+                String description = rs.getString("description");
                 _List list;
                 if (done) {
                     double endMileage = rs.getDouble("endmileage");
@@ -148,9 +149,9 @@ public class ListUtil {
                     int  rents = rs.getInt("rents");
                     int rentDays = rs.getInt("rentDays");
                     double income = rs.getDouble("income");
-                    list = new _List(id, carId, startMileage, startDate, endMileage, eDate, rents, rentDays, done, income);
+                    list = new _List(id, carId, startMileage, startDate, endMileage, eDate, rents, rentDays, done, income,  description);
                 } else {
-                    list = new _List(id, carId, startMileage, sDate, false);
+                    list = new _List(id, carId, startMileage, sDate, false,  description);
                 }
 
                 lists.add(list);
@@ -165,11 +166,11 @@ public class ListUtil {
 
 
     public void addList(_List list) {
-        String sql = (list.isDone())?"INSERT INTO lists (carid, startmileage, startdate, endmileage, enddate, done, income, rents, rentDays)\n" +
+        String sql = (list.isDone())?"INSERT INTO lists (carid, startmileage, startdate, endmileage, enddate, done, income, rents, rentDays, description)\n" +
                 "VALUES" +
-                "(?, ?, ?, ?, ?, ?, ?, ?, ?)":"INSERT INTO lists (carid, startmileage, startdate, done)\n" +
+                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)":"INSERT INTO lists (carid, startmileage, startdate, done, description)\n" +
                 "VALUES" +
-                "(?, ?, ?, ?)";
+                "(?, ?, ?, ?, ?)";
 
         try (Connection connection = Connect();
              PreparedStatement insertStmt = connection.prepareStatement(sql)) {
@@ -184,10 +185,12 @@ public class ListUtil {
                 insertStmt.setDouble(7, list.getIncome());
                 insertStmt.setInt(8, list.getRents());
                 insertStmt.setInt(9, list.getRentDays());
+                insertStmt.setString(10, list.getDescription());
 
 
             } else {
                 insertStmt.setBoolean(4, list.isDone());
+                insertStmt.setString(5, list.getDescription());
             }
 
             insertStmt.executeUpdate();
@@ -197,8 +200,8 @@ public class ListUtil {
     }
 
     public void editList(_List list) {
-        String sql =(list.isDone())? "UPDATE lists SET carid = ?, startmileage = ?, startdate = ?, endmileage = ?, enddate = ?, done = ?, income = ?, rents = ?, rentDays = ?" +
-                " WHERE id = ?":"UPDATE lists SET carid = ?, startmileage = ?, startdate = ?, done = ?" +
+        String sql =(list.isDone())? "UPDATE lists SET carid = ?, startmileage = ?, startdate = ?, endmileage = ?, enddate = ?, done = ?, income = ?, rents = ?, rentDays = ?, description = ?" +
+                " WHERE id = ?":"UPDATE lists SET carid = ?, startmileage = ?, startdate = ?, done = ?, description = ?" +
                 " WHERE id = ?";
 
         try (Connection connection = Connect();
@@ -214,10 +217,13 @@ public class ListUtil {
                 updateStmt.setDouble(7, list.getIncome());
                 updateStmt.setInt(8, list.getRents());
                 updateStmt.setInt(9, list.getRentDays());
-                updateStmt.setInt(10, list.getId());
+                updateStmt.setString(10, list.getDescription());
+                updateStmt.setInt(11, list.getId());
             } else {
                 updateStmt.setBoolean(4, list.isDone());
-                updateStmt.setInt(5, list.getId());
+                updateStmt.setString(5, list.getDescription());
+                updateStmt.setInt(6, list.getId());
+
             }
 
 

@@ -6,6 +6,7 @@ import com.work.oblikcars.Utils.DB.DBUtil;
 import com.work.oblikcars.Utils.DB.InspectionUtil;
 import com.work.oblikcars.Utils.DB.InsuranceUtil;
 import com.work.oblikcars.Utils.IconsUtil;
+import com.work.oblikcars.model.WorkType;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._Inspection;
 import com.work.oblikcars.model._Insurance;
@@ -41,7 +42,7 @@ public class InspectionJournalController extends WindowController {
     }
 
     public void openWindow() {
-        String windowTitle = "Журнал: техогляди";
+        String windowTitle = "Журнал: сервіси";
         mainPage = MainPage.getInstance();
 
         if (mainPage.checkOpenWindow(windowTitle)) return;
@@ -52,16 +53,16 @@ public class InspectionJournalController extends WindowController {
         carUtil = CarUtil.getInstance();
 
 
-        Button addButton = new Button("Додати техогляд");
+        Button addButton = new Button("Додати сервіс");
         addButton.setGraphic(IconsUtil.getPlusIcon());
         addButton.getStyleClass().add("green-button");
 
-        Button editButton = new Button("Редагувати техогляд");
+        Button editButton = new Button("Редагувати сервіс");
         editButton.setGraphic(IconsUtil.getPencilIcon());
         editButton.setDisable(true);
         editButton.getStyleClass().add("yellow-button");
 
-        Button DeleteButton = new Button("Видалити техогляд");
+        Button DeleteButton = new Button("Видалити сервіс");
         DeleteButton.setGraphic(IconsUtil.getRubbishIcon());
         DeleteButton.setDisable(true);
         DeleteButton.getStyleClass().add("red-button");
@@ -83,16 +84,19 @@ public class InspectionJournalController extends WindowController {
             return new ReadOnlyStringWrapper(boxString);
         });
 
-        TableColumn<_Inspection, LocalDate> mileageCol = new TableColumn<>("Пробіг");
-        mileageCol.setCellValueFactory(new PropertyValueFactory<>("mileage"));
-
-        TableColumn<_Inspection, LocalDate> priceCol = new TableColumn<>("Вартість");
+        TableColumn<_Inspection, String> priceCol = new TableColumn<>("Вартість");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
 
-        TableColumn<_Inspection, LocalDate> descriptionCol = new TableColumn<>("Опис");
+        TableColumn<_Inspection, String> descriptionCol = new TableColumn<>("Опис");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        inspectionsTable.getColumns().addAll(carCol, mileageCol, priceCol, descriptionCol);
+        TableColumn<_Inspection, String> workTypeCol = new TableColumn<>("Послуга");
+        workTypeCol.setCellValueFactory(cellData -> {
+            WorkType type = cellData.getValue().getWorkType();
+            return new ReadOnlyStringWrapper(type != null ? type.getDisplayName() : "");
+        });
+
+        inspectionsTable.getColumns().addAll(carCol, priceCol, workTypeCol, descriptionCol);
 
         inspectionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;

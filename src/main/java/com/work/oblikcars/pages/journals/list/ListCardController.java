@@ -9,11 +9,7 @@ import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._List;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
@@ -34,6 +30,7 @@ public class ListCardController extends WindowController{
     private TextField rentsField;
     private TextField incomeField;
 
+    private TextArea descriptionField;
     private DatePicker endDatePicker;
     private TextField endMileageField;
     private String windowTitle;
@@ -60,6 +57,8 @@ public class ListCardController extends WindowController{
         incomeField  = new TextField();
         rentDaysField = new TextField();
         rentsField = new TextField();
+        descriptionField = new TextArea();
+        descriptionField.setPrefRowCount(2);
 
         carField.setDisable(isClosing);
         startDatePicker.setDisable(isClosing);
@@ -83,6 +82,7 @@ public class ListCardController extends WindowController{
         Label rentDaysLabel = new Label("Кількість днів ренти");
         Label rentsLabel = new Label("Кількість рент");
         Label incomeLabel = new Label("Рентний дохід");
+        Label descriptionLabel = new Label("Коментар");
 
 
 
@@ -113,7 +113,7 @@ public class ListCardController extends WindowController{
             }
             startDatePicker.setValue(selectedList.getStartDate());
             startMileageField.setText(String.valueOf(selectedList.getStartMileage()));
-
+            descriptionField.setText(selectedList.getDescription());
             if(selectedList.isDone()){
                 endDatePicker.setValue(selectedList.getEndDate());
                 endMileageField.setText(String.valueOf(selectedList.getEndMileage()));
@@ -131,7 +131,8 @@ public class ListCardController extends WindowController{
                 endMileageLabel, endMileageField,
                 rentsLabel, rentsField,
                 rentDaysLabel, rentDaysField,
-                incomeLabel, incomeField
+                incomeLabel, incomeField,
+                descriptionLabel, descriptionField
         );
 
         javafx.scene.control.Button saveButton = new javafx.scene.control.Button("Зберегти");
@@ -184,6 +185,7 @@ public class ListCardController extends WindowController{
         list.setCarId(selectedCarId);
         list.setStartDate(startDatePicker.getValue());
         list.setStartMileage(Double.parseDouble(startMileageField.getText()));
+        list.setDescription(descriptionField.getText());
         if(endDatePicker.getValue() != null && endMileageField.getText() != null) {
             list.setEndMileage(Double.parseDouble(endMileageField.getText()));
             list.setEndDate(endDatePicker.getValue());

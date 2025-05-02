@@ -13,11 +13,12 @@ public class _List {
     private int rentDays;
     private boolean done;
     private double income;
+    private String description;
 
     public _List() {
     }
 
-    public _List(int id, int carId, double startMileage, LocalDate startDate, double endMileage, LocalDate endDate, int rents, int rentDays, boolean done, double income) {
+    public _List(int id, int carId, double startMileage, LocalDate startDate, double endMileage, LocalDate endDate, int rents, int rentDays, boolean done, double income, String description) {
         this.id = id;
         this.carId = carId;
         this.startMileage = startMileage;
@@ -28,9 +29,10 @@ public class _List {
         this.rentDays = rentDays;
         this.done = done;
         this.income = income;
+        this.description = description;
     }
 
-    public _List(int carId, double startMileage, LocalDate startDate, double endMileage, LocalDate endDate, int rents, int rentDays, boolean done, double income) {
+    public _List(int carId, double startMileage, LocalDate startDate, double endMileage, LocalDate endDate, int rents, int rentDays, boolean done, double income, String description) {
         this.carId = carId;
         this.startMileage = startMileage;
         this.startDate = startDate;
@@ -40,6 +42,15 @@ public class _List {
         this.rentDays = rentDays;
         this.done = done;
         this.income = income;
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public double getIncome() {
@@ -50,19 +61,21 @@ public class _List {
         this.income = income;
     }
 
-    public _List(int carId, double startMileage, LocalDate startDate, boolean done) {
+    public _List(int carId, double startMileage, LocalDate startDate, boolean done, String description) {
         this.carId = carId;
         this.startMileage = startMileage;
         this.startDate = startDate;
         this.done = done;
+        this.description = description;
     }
 
-    public _List(int id, int carId, double startMileage, LocalDate startDate, boolean done) {
+    public _List(int id, int carId, double startMileage, LocalDate startDate, boolean done, String description) {
         this.id = id;
         this.carId = carId;
         this.startMileage = startMileage;
         this.startDate = startDate;
         this.done = done;
+        this.description = description;
     }
 
     public void setEndMileage(double endMileage) {

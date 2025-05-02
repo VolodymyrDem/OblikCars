@@ -106,6 +106,10 @@ public class CarsHandbookController extends WindowController {
         TableColumn<_Car, String> priceCol = new TableColumn<>("Ціна транспортного засобу");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
 
+
+        TableColumn<_Car, String> transportPriceCol = new TableColumn<>("Ціна транспортування");
+        transportPriceCol.setCellValueFactory(new PropertyValueFactory<>("transportPrice"));
+
         TableColumn<_Car, String> removeDateCol = new TableColumn<>("Дата зняття з експлуатації");
         removeDateCol.setCellValueFactory(cellData -> {
             return new ReadOnlyStringWrapper(cellData.getValue().isValid() ? "" : String.valueOf(cellData.getValue().getRemoveDate()));
@@ -118,7 +122,7 @@ public class CarsHandbookController extends WindowController {
 
 
         carsTable.getColumns().addAll(vinCol, numberCol,colorCol, modelCol,yearCol, fuelCol, engineVolumeCol, rentDateCol,
-                mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol,descriptionCol, removeDateCol, actualCol);
+                mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol, transportPriceCol,descriptionCol, removeDateCol, actualCol);
 
         carsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;

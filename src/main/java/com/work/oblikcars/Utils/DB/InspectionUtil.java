@@ -1,5 +1,6 @@
 package com.work.oblikcars.Utils.DB;
 
+import com.work.oblikcars.model.WorkType;
 import com.work.oblikcars.model._Inspection;
 
 import java.sql.*;
@@ -29,11 +30,11 @@ public class InspectionUtil {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 int carId = rs.getInt("carid");
-                double mileage = rs.getDouble("mileage");
+                int workTypeCode = rs.getInt("worktype");
                 double price = rs.getDouble("price");
                 String description = rs.getString("description");
 
-                inspections.add(new _Inspection(id, carId, mileage, price, description));
+                inspections.add(new _Inspection(id, carId, WorkType.fromCode(workTypeCode), price, description));
             }
 
         } catch (SQLException e) {
@@ -44,13 +45,13 @@ public class InspectionUtil {
     }
 
     public void addInspection(_Inspection inspection) {
-        String sql = "INSERT INTO inspections (carid, mileage, price, description) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO inspections (carid, workType, price, description) VALUES (?, ?, ?, ?)";
 
         try (Connection connection = connect();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, inspection.getCarId());
-            stmt.setDouble(2, inspection.getMileage());
+            stmt.setInt(2, inspection.getWorkType().getCode());
             stmt.setDouble(3, inspection.getPrice());
             stmt.setString(4, inspection.getDescription());
 
@@ -61,13 +62,13 @@ public class InspectionUtil {
     }
 
     public void editInspection(_Inspection inspection) {
-        String sql = "UPDATE inspections SET carid = ?, mileage = ?, price = ?, description = ? WHERE id = ?";
+        String sql = "UPDATE inspections SET carid = ?, workType = ?, price = ?, description = ? WHERE id = ?";
 
         try (Connection connection = connect();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
 
             stmt.setInt(1, inspection.getCarId());
-            stmt.setDouble(2, inspection.getMileage());
+            stmt.setInt(2, inspection.getWorkType().getCode());
             stmt.setDouble(3, inspection.getPrice());
             stmt.setString(4, inspection.getDescription());
             stmt.setInt(5, inspection.getId());

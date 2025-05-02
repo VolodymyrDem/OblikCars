@@ -27,6 +27,7 @@ public class CarCardController extends WindowController {
     private TextField priceOfFirstRegistrationField;
     private CheckBox validCheckBox;
     private TextField priceField;
+    private TextField transportPriceField;
     private String windowTitle;
     private TextField yearField;
     private TextField colorField;
@@ -61,6 +62,7 @@ public class CarCardController extends WindowController {
         Label colorLabel = new Label("Колір");
         Label descriptionLabel = new Label("Опис");
         Label removeDateLabel = new Label("Дата зняття з експлуатації");
+        Label transportPriceLabel = new Label("Ціна транспортування");
 
         validCheckBox = new CheckBox("Валідність");
         yearField = new TextField();
@@ -77,6 +79,7 @@ public class CarCardController extends WindowController {
         firstRegistrationDatePicker = new DatePicker();
         priceOfFirstRegistrationField = new TextField();
         priceField = new TextField();
+        transportPriceField = new TextField();
         removeDatePicker = new DatePicker();
         removeDatePicker.setDisable(true);
         if(selectedCar != null){
@@ -94,6 +97,7 @@ public class CarCardController extends WindowController {
             firstRegistrationDatePicker.setValue(selectedCar.getFirstRegistrationDate());
             priceOfFirstRegistrationField.setText(String.valueOf(selectedCar.getPriceOfFirstRegistration()));
             priceField.setText(String.valueOf(selectedCar.getPrice()));
+            transportPriceField.setText(String.valueOf(selectedCar.getTransportPrice()));
             validCheckBox.setSelected(selectedCar.isValid());
             validCheckBox.setDisable(false);
             if(!selectedCar.isValid()){
@@ -132,6 +136,7 @@ public class CarCardController extends WindowController {
                 firstRegistrationDateLabel, firstRegistrationDatePicker,
                 priceOfFirstRegistrationLabel, priceOfFirstRegistrationField,
                 priceLabel, priceField,
+                transportPriceLabel, transportPriceField,
                 descriptionLabel, descriptionField,
                 removeDateLabel, removeDatePicker
         );
@@ -191,6 +196,7 @@ public class CarCardController extends WindowController {
         car.setColor(colorField.getText());
         car.setDescription(descriptionField.getText());
         car.setValid(validCheckBox.isSelected());
+        car.setTransportPrice(Double.parseDouble(transportPriceField.getText().replace(",", ".")));
         if(!validCheckBox.isSelected()){
             car.setRemoveDate(removeDatePicker.getValue());
         }
@@ -211,7 +217,8 @@ public class CarCardController extends WindowController {
                 !isDouble(mileageStartField.getText().replace(",", ".")) ||
                 firstRegistrationDatePicker.getValue() == null ||
                 !isDouble(priceOfFirstRegistrationField.getText().replace(",", ".")) ||
-                !isDouble(priceField.getText().replace(",", "."));
+                !isDouble(priceField.getText().replace(",", ".")) ||
+                !isDouble(transportPriceField.getText().replace(",", "."));
     }
 
 }

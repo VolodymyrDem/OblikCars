@@ -111,6 +111,9 @@ public class ListJournalController extends WindowController {
         TableColumn<_List, LocalDate> endDateCol = new TableColumn<>("Дата завершення");
         endDateCol.setCellValueFactory(new PropertyValueFactory<>("endDate"));
 
+        TableColumn<_List, LocalDate> descriptionCol = new TableColumn<>("Коментар");
+        descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
+
         TableColumn<_List, String> incomeCol = new TableColumn<>("Рентний дохід");
         incomeCol.setCellValueFactory(cellData -> {
             return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf(cellData.getValue().getIncome()):"");
@@ -118,10 +121,10 @@ public class ListJournalController extends WindowController {
 
         TableColumn<_List, String> avgMilCol = new TableColumn<>("Середній пробіг за день ренти");
         avgMilCol.setCellValueFactory(cellData -> {
-            return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf((cellData.getValue().getEndMileage() -  cellData.getValue().getStartMileage())/cellData.getValue().getRentDays()):"");
+            return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf(Math.round((cellData.getValue().getEndMileage() -  cellData.getValue().getStartMileage())/cellData.getValue().getRentDays())):"");
         });
 
-        listsTable.getColumns().addAll(carCol, startDateCol, startMileageCol, endDateCol, endMileageCol, rentsCol, rentDaysCol, avgMilCol, incomeCol);
+        listsTable.getColumns().addAll(carCol, startDateCol, startMileageCol, endDateCol, endMileageCol, rentsCol, rentDaysCol, avgMilCol, incomeCol, descriptionCol);
 
         listsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;

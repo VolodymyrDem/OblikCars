@@ -39,7 +39,8 @@ public class CarUtil {
                 rs.getDate("firstRegistrationDate").toLocalDate(),
                 rs.getDouble("priceOfFirstRegistration"),
                 rs.getDouble("price"),
-                rs.getBoolean("valid")
+                rs.getBoolean("valid"),
+                rs.getDouble("transportPrice")
         );
         if(!rs.getBoolean("valid")) {
             car.setRemoveDate(rs.getDate("removeDate").toLocalDate()
@@ -214,8 +215,8 @@ public class CarUtil {
     }
 
     public void addCar(_Car car) {
-        String sql = car.isValid()?"INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)":
-                                   "INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, removeDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = car.isValid()?"INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, transportPrice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)":
+                                   "INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, removeDate, transportPrice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, car.getVin());
@@ -232,15 +233,20 @@ public class CarUtil {
             ps.setDouble(12, car.getPriceOfFirstRegistration());
             ps.setDouble(13, car.getPrice());
             ps.setBoolean(14, car.isValid());
-            if(!car.isValid())
+            ps.setDouble(15, car.getTransportPrice());
+            if(!car.isValid()) {
                 ps.setDate(15, Date.valueOf(car.getRemoveDate()));
+                ps.setDouble(16, car.getTransportPrice());
+            }
+
+
 
             ps.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
     public void editCar(_Car car) {
-        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ?, removeDate = ? WHERE id = ?";
+        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ?, removeDate = ?, transportPrice = ? WHERE id = ?";
         try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, car.getVin());
             ps.setString(2, car.getNumber());
@@ -257,7 +263,8 @@ public class CarUtil {
             ps.setDouble(13, car.getPrice());
             ps.setBoolean(14, car.isValid());
             ps.setDate(15, car.isValid()?null:Date.valueOf(car.getRemoveDate()));
-            ps.setInt(16, car.getId());
+            ps.setDouble(16, car.getTransportPrice());
+            ps.setInt(17, car.getId());
             ps.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }

@@ -19,6 +19,7 @@ public class _Car {
     private double price;
     private boolean valid;
     private LocalDate removeDate;
+    private double transportPrice;
 
     public _Car() {
     }
@@ -29,7 +30,7 @@ public class _Car {
         return number + " " + model;
     }
 
-    public _Car(String vin, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid) {
+    public _Car(String vin, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid, double transportPrice) {
         this.vin = vin;
         this.number = number;
         this.model = model;
@@ -44,9 +45,10 @@ public class _Car {
         this.priceOfFirstRegistration = priceOfFirstRegistration;
         this.price = price;
         this.valid = valid;
+        this.transportPrice = transportPrice;
     }
 
-    public _Car(int id, String vin, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid) {
+    public _Car(int id, String vin, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid, double transportPrice) {
         this.id = id;
         this.vin = vin;
         this.number = number;
@@ -62,6 +64,15 @@ public class _Car {
         this.priceOfFirstRegistration = priceOfFirstRegistration;
         this.price = price;
         this.valid = valid;
+        this.transportPrice = transportPrice;
+    }
+
+    public double getTransportPrice() {
+        return transportPrice;
+    }
+
+    public void setTransportPrice(double transportPrice) {
+        this.transportPrice = transportPrice;
     }
 
     public boolean isValid() {

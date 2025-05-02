@@ -110,7 +110,7 @@ public class MainPage {
         Menu JournalMenu = new Menu("Журнали");
 
         MenuItem listJournal = new MenuItem("Журнал подорожніх листів");
-        MenuItem inspectionJournal = new MenuItem("Журнал техоглядів");
+        MenuItem inspectionJournal = new MenuItem("Журнал сервісів");
         MenuItem insuranceJournal = new MenuItem("Журнал страховок");
         MenuItem registrationJournal = new MenuItem("Журнал реєстрацій");
 

@@ -5,6 +5,7 @@ import com.work.oblikcars.Utils.AutoCompleteComboBoxListener;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.InspectionUtil;
 import com.work.oblikcars.Utils.PagesUtil;
+import com.work.oblikcars.model.WorkType;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._Inspection;
 import com.work.oblikcars.pages.MainPage;
@@ -28,9 +29,9 @@ public class InspectionCardController extends WindowController {
     private InspectionUtil inspectionUtil;
     private GridPane grid;
     Map<Integer, String> carMap;
+    private ComboBox<WorkType> workTypeField;
 
     private ComboBox<String> carField;
-    private TextField mileageField;
     private TextField priceField;
     private TextArea descriptionField;
 
@@ -39,7 +40,7 @@ public class InspectionCardController extends WindowController {
     private int id;
 
     public void openWindow(InspectionJournalController journal, _Inspection selectedInspection) {
-        windowTitle = (selectedInspection == null)?"Журнал: техоглядів - додати техогляд" : "Журнал: техоглядів - редагувати техогляд";
+        windowTitle = (selectedInspection == null)?"Журнал: сервіс - додати сервіс" : "Журнал: сервіс - редагувати сервіс";
 
         mainPage = MainPage.getInstance();
 
@@ -50,15 +51,33 @@ public class InspectionCardController extends WindowController {
         carField = new ComboBox<>();
 
         priceField = new TextField();
-        mileageField = new TextField();
         descriptionField = new TextArea();
 
         descriptionField.setPrefRowCount(3);
         descriptionField.setWrapText(true);
 
         carMap = carUtil.getAllCarComboMap(true);
+        workTypeField = new ComboBox<>();
+        workTypeField.getItems().addAll(WorkType.values());
+        workTypeField.setCellFactory(cb -> new ListCell<>() {
+            @Override
+            protected void updateItem(WorkType item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getDisplayName());
+            }
+        });
+        workTypeField.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(WorkType item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getDisplayName());
+            }
+        });
+
         if (selectedInspection != null) {
             addSelectedCarToMap(selectedInspection.getCarId());
+            workTypeField.setValue(selectedInspection.getWorkType());
+
         }
         carField.getItems().addAll(carMap.values());
         new AutoCompleteComboBoxListener<>(carField);
@@ -67,10 +86,9 @@ public class InspectionCardController extends WindowController {
         grid = new GridPane();
 
         Label carLabel = new Label("Транспортний засіб");
-        Label mileageLabel = new Label("Пробіг");
         Label priceLabel = new Label("Ціна");
         Label descriptionLabel = new Label("Опис");
-
+        Label workTypeLabel = new Label("Тип роботи");
 
 
 
@@ -81,14 +99,13 @@ public class InspectionCardController extends WindowController {
                 carField.setValue(carBoxValue);
             }
             priceField.setText(String.valueOf(selectedInspection.getPrice()));
-            mileageField.setText(String.valueOf(selectedInspection.getMileage()));
             descriptionField.setText(selectedInspection.getDescription());
         }
 
         grid = PagesUtil.buildGridDouble(
                 carLabel, carField,
-                mileageLabel, mileageField,
                 priceLabel, priceField,
+                workTypeLabel, workTypeField,
                 descriptionLabel, descriptionField
         );
 
@@ -110,7 +127,7 @@ public class InspectionCardController extends WindowController {
             AlertsUtil.ErrorAlert("Помилка вводу", "Введіть усі необхідні дані").showAndWait();
         } else {
             try {
-                AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати техогляд" : "Додати техогляд").showAndWait().ifPresent(response -> {
+                AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати сервіс" : "Додати сервіс").showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
                         String selectedCarString = carField.getValue();
                         int selectedCarId = carMap.entrySet().stream()
@@ -121,7 +138,7 @@ public class InspectionCardController extends WindowController {
 
                         _Inspection inspection = new _Inspection(
                                 selectedCarId,
-                                Double.parseDouble(mileageField.getText().replace(",", ".")),
+                                workTypeField.getValue(),
                                 Double.parseDouble(priceField.getText().replace(",", ".")),
                                 descriptionField.getText());
                         if(isEditing){
@@ -142,7 +159,7 @@ public class InspectionCardController extends WindowController {
     }
 
     private boolean checkInput() {
-        return (!isDouble(priceField.getText()) || !isDouble(mileageField.getText()) || carField.getValue() == null);
+        return (!isDouble(priceField.getText()) || workTypeField.getValue() == null || carField.getValue() == null);
     }
 
     private void addSelectedCarToMap(int carId) {
