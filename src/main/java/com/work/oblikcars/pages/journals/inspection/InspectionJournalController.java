@@ -77,7 +77,7 @@ public class InspectionJournalController extends WindowController {
         updateButton.getStyleClass().add("uniform-button");
 
 
-        TableColumn<_Inspection, String> carCol = new TableColumn<>("Транспортний засіб");
+        TableColumn<_Inspection, String> carCol = new TableColumn<>("Авто");
         carCol.setCellValueFactory(cellData -> {
             _Car car = carUtil.getCarById(cellData.getValue().getCarId());
             String boxString = (car != null) ? car.getBoxString() : "Невідомо";
@@ -90,13 +90,16 @@ public class InspectionJournalController extends WindowController {
         TableColumn<_Inspection, String> descriptionCol = new TableColumn<>("Опис");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
+        TableColumn<_Inspection, String> dateCol = new TableColumn<>("Дата");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
+
         TableColumn<_Inspection, String> workTypeCol = new TableColumn<>("Послуга");
         workTypeCol.setCellValueFactory(cellData -> {
             WorkType type = cellData.getValue().getWorkType();
             return new ReadOnlyStringWrapper(type != null ? type.getDisplayName() : "");
         });
 
-        inspectionsTable.getColumns().addAll(carCol, priceCol, workTypeCol, descriptionCol);
+        inspectionsTable.getColumns().addAll(carCol, priceCol, workTypeCol, descriptionCol, dateCol);
 
         inspectionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;
@@ -124,7 +127,7 @@ public class InspectionJournalController extends WindowController {
         DeleteButton.setOnAction(e -> {
             _Inspection selectedItem = inspectionsTable.getSelectionModel().getSelectedItem();
             if (selectedItem != null) {
-                Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити лист");
+                Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити сервіс");
                 confirmationAlert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
                         inspectionUtil.deleteInspection(selectedItem);

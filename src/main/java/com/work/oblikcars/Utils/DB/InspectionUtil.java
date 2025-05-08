@@ -4,6 +4,7 @@ import com.work.oblikcars.model.WorkType;
 import com.work.oblikcars.model._Inspection;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,11 +31,12 @@ public class InspectionUtil {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 int carId = rs.getInt("carid");
-                int workTypeCode = rs.getInt("worktype");
+                int workTypeCode = rs.getInt("workType");
                 double price = rs.getDouble("price");
                 String description = rs.getString("description");
+                LocalDate date = rs.getDate("date").toLocalDate();
 
-                inspections.add(new _Inspection(id, carId, WorkType.fromCode(workTypeCode), price, description));
+                inspections.add(new _Inspection(id, carId, WorkType.fromCode(workTypeCode), price, description, date));
             }
 
         } catch (SQLException e) {
@@ -45,7 +47,7 @@ public class InspectionUtil {
     }
 
     public void addInspection(_Inspection inspection) {
-        String sql = "INSERT INTO inspections (carid, workType, price, description) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO inspections (carid, workType, price, description, date) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection connection = connect();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -54,6 +56,7 @@ public class InspectionUtil {
             stmt.setInt(2, inspection.getWorkType().getCode());
             stmt.setDouble(3, inspection.getPrice());
             stmt.setString(4, inspection.getDescription());
+            stmt.setDate(5, Date.valueOf(inspection.getDate()));
 
             stmt.executeUpdate();
         } catch (SQLException e) {
@@ -62,7 +65,7 @@ public class InspectionUtil {
     }
 
     public void editInspection(_Inspection inspection) {
-        String sql = "UPDATE inspections SET carid = ?, workType = ?, price = ?, description = ? WHERE id = ?";
+        String sql = "UPDATE inspections SET carid = ?, workType = ?, price = ?, description = ?, date = ? WHERE id = ?";
 
         try (Connection connection = connect();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -71,7 +74,8 @@ public class InspectionUtil {
             stmt.setInt(2, inspection.getWorkType().getCode());
             stmt.setDouble(3, inspection.getPrice());
             stmt.setString(4, inspection.getDescription());
-            stmt.setInt(5, inspection.getId());
+            stmt.setDate(5, Date.valueOf(inspection.getDate()));
+            stmt.setInt(6, inspection.getId());
 
             int affected = stmt.executeUpdate();
             if (affected == 0) {
@@ -111,4 +115,56 @@ public class InspectionUtil {
     private Connection connect() {
         return DBUtil.getInstance().Connect();
     }
+
+    public List<_Inspection> getInspectionsByCarsDates(LocalDate startDate,
+                                                       LocalDate endDate,
+                                                       List<Integer> carIds) {
+        List<_Inspection> inspections = new ArrayList<>();
+        if (carIds == null || carIds.isEmpty()) {
+            return inspections;
+        }
+
+        // Формуємо ?,?,? для IN-клаузи
+        String placeholders = String.join(",", carIds.stream().map(id -> "?").toList());
+
+        String sql = """
+        SELECT id,
+               carid,
+               workType,
+               price,
+               description,
+               date
+          FROM inspections
+         WHERE carid IN (""" + placeholders + ") AND date BETWEEN ? AND ? ORDER BY carid, date ";
+
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            int idx = 1;
+            for (Integer cid : carIds) {
+                stmt.setInt(idx++, cid);
+            }
+            stmt.setDate(idx++, Date.valueOf(startDate));
+            stmt.setDate(idx,   Date.valueOf(endDate));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    inspections.add(new _Inspection(
+                            rs.getInt("id"),
+                            rs.getInt("carid"),
+                            WorkType.fromCode(rs.getInt("workType")),
+                            rs.getDouble("price"),
+                            rs.getString("description"),
+                            rs.getDate("date").toLocalDate()
+                    ));
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error fetching inspections by car IDs and dates: " + e.getMessage());
+        }
+
+        return inspections;
+    }
+
 }

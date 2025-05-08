@@ -19,9 +19,11 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 public class CarRegisterController extends WindowController {
     private ObservableList<CarReportRow> rows;
@@ -34,13 +36,15 @@ public class CarRegisterController extends WindowController {
     public CarRegisterController() {
     }
     public void openWindow() {
-        String windowTitle = "Реєстр: транспортні засоби";
+        String windowTitle = "Реєстр: авто";
         MainPage mainPage = MainPage.getInstance();
         if (mainPage.checkOpenWindow(windowTitle)) return;
         carUtil = CarUtil.getInstance();
         reportDatePicker = new DatePicker(LocalDate.now());
         carReportTable = new  TableView<>();
         rows = FXCollections.observableArrayList();
+        CheckBox showRentDateCheck = new CheckBox("Показати дату передачі в рент");
+        showRentDateCheck.setSelected(true);
         Label dateLabel = new Label("Дата: ");
         Button saveButton = new Button("Зберегти реєстр");
         saveButton.setGraphic(IconsUtil.getTikIcon());
@@ -77,24 +81,60 @@ public class CarRegisterController extends WindowController {
         TableColumn<CarReportRow, Number> yearCol = new TableColumn<>("Рік");
         yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
 
-        TableColumn<CarReportRow, Number> priceCol = new TableColumn<>("Вартість");
+        TableColumn<CarReportRow, Number> priceCol = new TableColumn<>("Вартість купівлі");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
 
         TableColumn<CarReportRow, String> rentedCol = new TableColumn<>("Переданий в рент");
         rentedCol.setCellValueFactory(new PropertyValueFactory<>("rented"));
 
-        TableColumn<CarReportRow, Number> mileageCol = new TableColumn<>("Загальний пробіг");
+        TableColumn<CarReportRow, LocalDate> rentCol = new TableColumn<>("Місяць та рік передачі в рент");
+        rentCol.setCellValueFactory(
+                cell -> cell.getValue().rentDateProperty()
+        );
+
+        rentCol.setCellFactory(col -> new TableCell<CarReportRow, LocalDate>() {
+            @Override
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (empty || date == null) {
+                    setText(null);
+                } else {
+                    String monthName = date.getMonth()
+                            .getDisplayName(TextStyle.FULL_STANDALONE, new Locale("uk"));
+                    setText(monthName + " " + date.getYear());
+                }
+            }
+        });
+
+
+        TableColumn<CarReportRow, Number> mileageCol = new TableColumn<>("Загальний пробіг у ренті");
         mileageCol.setCellValueFactory(new PropertyValueFactory<>("mileage"));
+
+        TableColumn<CarReportRow, Number> odometrCol = new TableColumn<>("Останній показник одометра");
+        odometrCol.setCellValueFactory(new PropertyValueFactory<>("Odometr"));
+
+
+        TableColumn<CarReportRow, Number> firstRegcol = new TableColumn<>("Вартість першої реєстрації");
+        firstRegcol.setCellValueFactory(new PropertyValueFactory<>("firstReg"));
+
+        TableColumn<CarReportRow, Number> transportPriceCol = new TableColumn<>("Вартість транспортування");
+        transportPriceCol.setCellValueFactory(new PropertyValueFactory<>("transportPrice"));
+
+        TableColumn<CarReportRow, Number> totalPriceCol = new TableColumn<>("Інвестиційна вартість");
+        totalPriceCol.setCellValueFactory(new PropertyValueFactory<>("totalPrice"));
+
+// 3) Після того, як створили rentCol, звʼяжіть видимість:
+        rentCol.visibleProperty().bind(showRentDateCheck.selectedProperty());
 
         carReportTable.getColumns().addAll(
                 idxCol, modelCol, colorCol, numberCol,
-                yearCol, priceCol, rentedCol, mileageCol
+                yearCol, rentedCol, rentCol, mileageCol, odometrCol, priceCol, firstRegcol, transportPriceCol, totalPriceCol
         );
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
 
-        HBox buttonBox = new HBox(10,updateButton, dateLabel, reportDatePicker, filterButton, saveButton);
+        HBox buttonBox = new HBox(10,updateButton, dateLabel, reportDatePicker,showRentDateCheck, filterButton, saveButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
         carReportTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);

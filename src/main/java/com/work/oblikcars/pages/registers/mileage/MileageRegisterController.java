@@ -53,7 +53,7 @@ public class MileageRegisterController extends WindowController {
 
         carMap = carUtil.getAllCarComboMap(true);
 
-        Label carLabel = new Label("Транспортний засіб:");
+        Label carLabel = new Label("Авто:");
         Label timeLabel = new Label("Період: з ");
         Label timeLabel2 = new Label("по");
         Button filterButton = new Button("Застосувати фільтр");
@@ -69,6 +69,9 @@ public class MileageRegisterController extends WindowController {
         carField.setMaxWidth(200);
         carField.setMinWidth(200);
         carField.getItems().addAll(carMap.values());
+
+        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
+        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
 
         filterButton.getStyleClass().add("uniform-button");
         saveButton.getStyleClass().add("uniform-button");
@@ -93,9 +96,20 @@ public class MileageRegisterController extends WindowController {
             ).openWindow();
         });
 
+        toggleCarSelectionBtn.setOnAction(e -> {
+            var checkModel = carField.getCheckModel();
+            if (checkModel.getCheckedItems().isEmpty()) {
+                // якщо нічого не обрано — обираємо всі
+                carField.getItems().forEach(item -> checkModel.check(item));
+            } else {
+                // якщо є хоча б один — чистимо вибір
+                checkModel.clearChecks();
+            }
+        });
 
 
-        TableColumn<_List, String> carCol = new TableColumn<>("Транспортний засіб");
+
+        TableColumn<_List, String> carCol = new TableColumn<>("Авто");
         carCol.setCellValueFactory(cellData -> {
             _Car car = carUtil.getCarById(cellData.getValue().getCarId());
             String boxString = (car != null) ? car.getBoxString() : "Невідомо";
@@ -125,7 +139,7 @@ public class MileageRegisterController extends WindowController {
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField, filterButton, saveButton);
+        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton);
 
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 

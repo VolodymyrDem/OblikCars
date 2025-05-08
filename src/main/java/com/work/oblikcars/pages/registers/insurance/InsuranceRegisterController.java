@@ -1,19 +1,13 @@
-package com.work.oblikcars.pages.journals.insurance;
+package com.work.oblikcars.pages.registers.insurance;
 
-import com.work.oblikcars.Utils.AlertsUtil;
-import com.work.oblikcars.Utils.DB.CarUtil;
-import com.work.oblikcars.Utils.DB.DBUtil;
 import com.work.oblikcars.Utils.DB.InsuranceUtil;
-import com.work.oblikcars.Utils.DB.ListUtil;
 import com.work.oblikcars.Utils.IconsUtil;
-import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._Insurance;
-import com.work.oblikcars.model._Insurance;
+import com.work.oblikcars.model._List;
 import com.work.oblikcars.pages.MainPage;
+import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.journals.insurance.InsuranceCardController;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -27,53 +21,53 @@ import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
-public class InsuranceJournalController extends WindowController {
+public class InsuranceRegisterController extends WindowController {
     private ObservableList<_Insurance> insurances;
     private MainPage mainPage;
     private InsuranceUtil insuranceUtil;
     private TableView<_Insurance> insuranceTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private DatePicker startDate;
+    private DatePicker endDate;
 
 
-    public InsuranceJournalController(){}
+    public InsuranceRegisterController() {
+    }
 
-    public void openWindow(){
-        String windowTitle = "Журнал: страхування";
+    public void openWindow() {
+        String windowTitle = "реєстр: страхування";
         mainPage = MainPage.getInstance();
-
         if(mainPage.checkOpenWindow(windowTitle))return;
 
         insuranceUtil = InsuranceUtil.getInstance();
         insuranceTable = new TableView<>();
         insurances = FXCollections.observableArrayList();
+        startDate = new DatePicker();
+        endDate = new DatePicker();
 
+        Label timeLabel = new Label("Період: з ");
+        Label timeLabel2 = new Label("по");
 
-        Button addButton = new Button("Додати страхування");
-        addButton.setGraphic(IconsUtil.getPlusIcon());
-        addButton.getStyleClass().add("green-button");
-
-        Button editButton = new Button("Редагувати страхування");
-        editButton.setGraphic(IconsUtil.getPencilIcon());
-        editButton.setDisable(true);
-        editButton.getStyleClass().add("yellow-button");
-
-        Button DeleteButton = new Button("Видалити страхування");
-        DeleteButton.setGraphic(IconsUtil.getRubbishIcon());
-        DeleteButton.setDisable(true);
-        DeleteButton.getStyleClass().add("red-button");
-
+        Button saveButton = new Button("Зберегти реєстр");
+        saveButton.setGraphic(IconsUtil.getTikIcon());
+        saveButton.getStyleClass().add("uniform-button");
         Button updateButton = new Button();
+        Button filterButton = new Button("Застосувати фільтр");
+        filterButton.setGraphic(IconsUtil.getFilterIcon());
         updateButton.getStyleClass().add("grey-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
-
-        addButton.getStyleClass().add("uniform-button");
-        editButton.getStyleClass().add("uniform-button");
-        DeleteButton.getStyleClass().add("uniform-button");
         updateButton.getStyleClass().add("uniform-button");
+        filterButton.getStyleClass().add("uniform-button");
+        Button settingsButton = new Button();
+        settingsButton.setGraphic(IconsUtil.getClockIcon());
 
-        TableColumn<_Insurance, Integer> carCol = new TableColumn<>("Кіль-ть авто");
+        TableColumn<_Insurance, Integer> numberCol = new TableColumn<>("№ п.п.");
+        numberCol.setCellValueFactory(new PropertyValueFactory<>("number"));
+
+        TableColumn<_Insurance, Integer> carCol = new TableColumn<>("Кіль-ть транспортних засобів");
         carCol.setCellValueFactory(new PropertyValueFactory<>("numberOfCars"));
 
         TableColumn<_Insurance, LocalDate> startDateCol = new TableColumn<>("Дата оплати");
@@ -87,52 +81,26 @@ public class InsuranceJournalController extends WindowController {
 
         insuranceTable.getColumns().addAll(carCol, startDateCol, endDateCol, priceCol);
 
-        insuranceTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            boolean isItemSelected = newSelection != null;
-            editButton.setDisable(!isItemSelected);
-            DeleteButton.setDisable(!isItemSelected);
-        });
-
-        editButton.setOnAction(e -> {
-            _Insurance selectedInsurance = insuranceTable.getSelectionModel().getSelectedItem();
-            if (selectedInsurance != null) {
-                InsuranceCardController controller = new InsuranceCardController();
-                controller.openWindow(this, selectedInsurance);
-            }
-        });
-
-        updateButton.setOnAction(e->{
+        filterButton.setOnAction(event -> {
             updateValues();
         });
 
-        addButton.setOnAction(e -> {
-            InsuranceCardController controller = new InsuranceCardController();
-            controller.openWindow(this, null);
+        updateButton.setOnAction(event -> {
+            updateValues();
         });
 
-        DeleteButton.setOnAction(e->{
-            _Insurance selectedInsurance = insuranceTable.getSelectionModel().getSelectedItem();
-            if (selectedInsurance != null) {
-                Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити страхування");
-                confirmationAlert.showAndWait().ifPresent(response -> {
-                    if (response == ButtonType.OK) {
-                        insuranceUtil.deleteInsurancePermanently(selectedInsurance);
-                        updateValues();
-                    }
-                });
-
-            }
+        settingsButton.setOnAction(e-> {
+            new PeriodController(
+                    "Реєстр: страхування — налаштування періоду",
+                    this::updateDates
+            ).openWindow();
         });
+
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
 
-        HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
-
-        if(DBUtil.getInstance().getUsername().equals("root")){
-            buttonBox.getChildren().add(DeleteButton);
-        }
-
+        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, filterButton, saveButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
         insuranceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -175,19 +143,18 @@ public class InsuranceJournalController extends WindowController {
                     break;
             }
         });
-
         table.getChildren().addAll(buttonBox,tableContainer, pagination);
 
         mainPage.openInternalWindow(table, windowTitle, true);
-
     }
+
 
     public void updateValues() {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
                 List<_Insurance> newLists;
-                newLists = insuranceUtil.getAllInsurances().stream()
+                newLists = insuranceUtil.getBetweenDates(startDate.getValue(), endDate.getValue()).stream()
                         .sorted((c1, c2) -> Integer.compare(c1.getId(), c2.getId()))
                         .toList();
 
@@ -225,5 +192,10 @@ public class InsuranceJournalController extends WindowController {
         }
 
         return new VBox();
+    }
+
+    public void updateDates(LocalDate start, LocalDate end) {
+        startDate.setValue(start);
+        endDate.setValue(end);
     }
 }

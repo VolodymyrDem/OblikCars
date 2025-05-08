@@ -330,8 +330,26 @@ public class CarUtil {
         return null; // якщо не знайдено
     }
 
-    public void markCarAsInvalidById(int id) {
-        String sql = "UPDATE cars SET valid = FALSE WHERE id = ?";
+    public void markCarAsInvalidById(int id, LocalDate date) {
+        String sql = "UPDATE cars SET removeDate = ?, valid = FALSE WHERE id = ?";
+
+        try (Connection connection = Connect();
+             PreparedStatement updateStmt = connection.prepareStatement(sql)) {
+
+            updateStmt.setDate(1, Date.valueOf(date));
+            updateStmt.setInt(2, id);
+            int affectedRows = updateStmt.executeUpdate();
+
+            if (affectedRows == 0) {
+                System.err.println("Не знайдено Транспортний засіб з ID " + id + " для деактивації.");
+            }
+        } catch (SQLException e) {
+            System.err.println("Помилка при деактивації Транспортний засіб: " + e.getMessage());
+        }
+    }
+
+    public void markCarAsValidById(int id) {
+        String sql = "UPDATE cars SET removeDate=null, valid = TRUE WHERE id = ?";
 
         try (Connection connection = Connect();
              PreparedStatement updateStmt = connection.prepareStatement(sql)) {
@@ -347,7 +365,6 @@ public class CarUtil {
         }
     }
 
-
     public List<CarReportRow> getCarReportRows(LocalDate reportDate) {
         List<CarReportRow> rows = new ArrayList<>();
         String sql = """
@@ -359,7 +376,10 @@ public class CarUtil {
           c.year,
           c.price,
           c.rentdate,
-          c.mileageStart
+          c.mileageStart,
+          c.priceOfFirstRegistration,
+          c.transportPrice,
+          c.rentdate
         FROM cars c
         WHERE c.rentdate <= ?
           AND (c.removeDate IS NULL OR c.removeDate >= ?)
@@ -384,7 +404,9 @@ public class CarUtil {
                     double price      = rs.getDouble("price");
                     LocalDate rentDt  = rs.getDate("rentdate").toLocalDate();
                     double startMiles = rs.getDouble("mileageStart");
-
+                    int firstReg =  rs.getInt("priceOfFirstRegistration");
+                    double transportPrice = rs.getDouble("transportPrice");
+                    LocalDate rentDate = rs.getDate("rentdate").toLocalDate();
                     // Останній зафіксований пробіг з таблиці lists
                     double lastMiles = getCurrentMileage(carId);
                     double rentalMiles = lastMiles - startMiles;
@@ -401,7 +423,11 @@ public class CarUtil {
                             year,
                             price,
                             rented ? "Так" : "Ні",
-                            rentalMiles
+                            rentalMiles,
+                            firstReg,
+                            transportPrice,
+                            rentDate,
+                            lastMiles
                     ));
                 }
             }
@@ -412,14 +438,6 @@ public class CarUtil {
         return rows;
     }
 
-
-    public void markCarAsInvalid(_Car car) {
-        if (car != null) {
-            markCarAsInvalidById(car.getId());
-        } else {
-            System.err.println("Car object is null.");
-        }
-    }
 
     private Connection Connect() {
         DBUtil dbUtil = DBUtil.getInstance();

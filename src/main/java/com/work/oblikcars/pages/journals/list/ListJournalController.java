@@ -48,7 +48,6 @@ public class ListJournalController extends WindowController {
         lists = FXCollections.observableArrayList();
         carUtil = CarUtil.getInstance();
 
-        double buttonHeight = 32;
         Button addButton = new Button("Додати лист");
         addButton.setGraphic(IconsUtil.getPlusIcon());
         addButton.getStyleClass().add("green-button");
@@ -79,20 +78,20 @@ public class ListJournalController extends WindowController {
         updateButton.getStyleClass().add("uniform-button");
 
 
-        TableColumn<_List, String> carCol = new TableColumn<>("Транспортний засіб");
+        TableColumn<_List, String> carCol = new TableColumn<>("Авто");
         carCol.setCellValueFactory(cellData -> {
             _Car car = carUtil.getCarById(cellData.getValue().getCarId());
             String boxString = (car != null) ? car.getBoxString() : "Невідомо";
             return new ReadOnlyStringWrapper(boxString);
         });
 
-        TableColumn<_List, String> startMileageCol = new TableColumn<>("Пробіг на початку");
+        TableColumn<_List, String> startMileageCol = new TableColumn<>("Початковий пробіг");
         startMileageCol.setCellValueFactory(new PropertyValueFactory<>("startMileage"));
 
         TableColumn<_List, LocalDate> startDateCol = new TableColumn<>("Дата початку");
         startDateCol.setCellValueFactory(new PropertyValueFactory<>("startDate"));
 
-        TableColumn<_List, String> endMileageCol = new TableColumn<>("Пробіг у кінці");
+        TableColumn<_List, String> endMileageCol = new TableColumn<>("Кінцевий пробіг");
         endMileageCol.setCellValueFactory(cellData -> {
             Double value = cellData.getValue().getEndMileage();
             return new ReadOnlyStringWrapper(value != 0 ? String.valueOf(value) : "");
@@ -114,17 +113,22 @@ public class ListJournalController extends WindowController {
         TableColumn<_List, LocalDate> descriptionCol = new TableColumn<>("Коментар");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        TableColumn<_List, String> incomeCol = new TableColumn<>("Рентний дохід");
+        TableColumn<_List, String> incomeCol = new TableColumn<>("Загальний дохід");
         incomeCol.setCellValueFactory(cellData -> {
             return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf(cellData.getValue().getIncome()):"");
         });
+
+        TableColumn<_List, Double> incomeDayCol = new TableColumn<>("Вартість дня ренти");
+        incomeDayCol.setCellValueFactory(new PropertyValueFactory<>("avgDayCost"));
+
+        formatDoubleColumn(incomeDayCol, "#.00");
 
         TableColumn<_List, String> avgMilCol = new TableColumn<>("Середній пробіг за день ренти");
         avgMilCol.setCellValueFactory(cellData -> {
             return new ReadOnlyStringWrapper(cellData.getValue().isDone()?String.valueOf(Math.round((cellData.getValue().getEndMileage() -  cellData.getValue().getStartMileage())/cellData.getValue().getRentDays())):"");
         });
 
-        listsTable.getColumns().addAll(carCol, startDateCol, startMileageCol, endDateCol, endMileageCol, rentsCol, rentDaysCol, avgMilCol, incomeCol, descriptionCol);
+        listsTable.getColumns().addAll(carCol, startDateCol, startMileageCol, endDateCol, endMileageCol, rentsCol, rentDaysCol, avgMilCol, incomeCol, incomeDayCol, descriptionCol);
 
         listsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;

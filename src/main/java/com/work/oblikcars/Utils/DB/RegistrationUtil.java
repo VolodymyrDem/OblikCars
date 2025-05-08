@@ -19,6 +19,56 @@ public class RegistrationUtil {
         return instance;
     }
 
+    public List<_Registration> getRegistrationsByCarsDates(LocalDate startDate,
+                                                           LocalDate endDate,
+                                                           List<Integer> carIds) {
+        List<_Registration> list = new ArrayList<>();
+        if (carIds == null || carIds.isEmpty()) {
+            return list;
+        }
+
+        // Створюємо плейсхолдери "?, ?, ?, ..."
+        String placeholders = String.join(",", carIds.stream().map(id -> "?").toList());
+
+        String sql = """
+        SELECT id,
+               carId,
+               price,
+               registrationdate
+          FROM registrations
+         WHERE carId IN (""" + placeholders + ") AND registrationdate BETWEEN ? AND ? ORDER BY carId, registrationdate";
+
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // 1) Проставляємо carId
+            int idx = 1;
+            for (Integer cid : carIds) {
+                stmt.setInt(idx++, cid);
+            }
+            // 2) Проставляємо дати
+            stmt.setDate(idx++, Date.valueOf(startDate));
+            stmt.setDate(idx,   Date.valueOf(endDate));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    _Registration reg = new _Registration(
+                            rs.getInt("id"),
+                            rs.getInt("carId"),
+                            rs.getDouble("price"),
+                            rs.getDate("registrationdate").toLocalDate()
+                    );
+                    list.add(reg);
+                }
+            }
+
+        } catch (SQLException ex) {
+            System.err.println("Error fetching registrations by car IDs and dates: " + ex.getMessage());
+        }
+
+        return list;
+    }
+
     public List<_Registration> getAllRegistrations() {
         List<_Registration> list = new ArrayList<>();
         String sql = "SELECT * FROM registrations";

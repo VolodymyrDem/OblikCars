@@ -14,6 +14,7 @@ public class _List {
     private boolean done;
     private double income;
     private String description;
+    private double avgDayCost;
 
     public _List() {
     }
@@ -30,6 +31,7 @@ public class _List {
         this.done = done;
         this.income = income;
         this.description = description;
+        avgDayCost = income/rentDays;
     }
 
     public _List(int carId, double startMileage, LocalDate startDate, double endMileage, LocalDate endDate, int rents, int rentDays, boolean done, double income, String description) {
@@ -43,6 +45,7 @@ public class _List {
         this.done = done;
         this.income = income;
         this.description = description;
+        avgDayCost = income/rentDays;
     }
 
     public String getDescription() {
@@ -152,5 +155,13 @@ public class _List {
 
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
+    }
+
+    public double getAvgDayCost() {
+        return avgDayCost;
+    }
+
+    public void setAvgDayCost(double avgDayCost) {
+        this.avgDayCost = avgDayCost;
     }
 }

@@ -1,95 +1,103 @@
-package com.work.oblikcars.pages.journals.registration;
+package com.work.oblikcars.pages.journals.cardepreciation;
 
 import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.AutoCompleteComboBoxListener;
+import com.work.oblikcars.Utils.DB.CarDepreciationUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
-import com.work.oblikcars.Utils.DB.RegistrationUtil;
 import com.work.oblikcars.Utils.PagesUtil;
 import com.work.oblikcars.model._Car;
-import com.work.oblikcars.model._Registration;
+import com.work.oblikcars.model._CarDepreciation;
+import com.work.oblikcars.model._Inspection;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
+import com.work.oblikcars.pages.journals.inspection.InspectionJournalController;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
 import java.util.Map;
 
-public class RegistrationCardController extends WindowController {
-    public RegistrationCardController() {
+public class CarDepreciationCardController extends WindowController {
+    public CarDepreciationCardController() {
     }
 
     private MainPage mainPage;
     private CarUtil carUtil;
-    private RegistrationUtil registrationUtil;
+    private CarDepreciationUtil carDepreciationUtil;
     private GridPane grid;
-    Map<Integer, String> carMap;
 
+
+    private Map<Integer, String> carMap;
     private ComboBox<String> carField;
-    private DatePicker datePicker;
     private TextField priceField;
+    private TextArea descriptionField;
+    private DatePicker datePicker;
 
     private String windowTitle;
-    private RegistrationJournalController registrationJournalController;
     private int id;
+    private CarDepreciationJournalController carDepreciationJournalController;
 
-    public void openWindow(RegistrationJournalController journal, _Registration selectedRegistration) {
-        windowTitle = (selectedRegistration == null)?"Журнал: продовження реєстрації - додати реєстрацію" : "Журнал: продовження реєстрації - редагувати реєстрацію";
+    public void openWindow(CarDepreciationJournalController journal, _CarDepreciation selected) {
+        windowTitle = (selected == null)?"Журнал: справедлива вартість - додати амортизацію" : "Журнал: справедлива вартість - редагувати амортизацію";
 
         mainPage = MainPage.getInstance();
-
         if(mainPage.checkOpenWindow(windowTitle))return;
-
         carUtil = CarUtil.getInstance();
-
-        carField = new ComboBox<>();
-        datePicker = new DatePicker();
-        priceField = new TextField();
-
+        carDepreciationUtil =  CarDepreciationUtil.getInstance();
+        carDepreciationJournalController = journal;
 
         carMap = carUtil.getAllCarComboMap(true);
-        if (selectedRegistration != null) {
-            addSelectedCarToMap(selectedRegistration.getCarId());
-        }
 
-        registrationUtil = RegistrationUtil.getInstance();
-        registrationJournalController = journal;
-        grid = new GridPane();
+        carField = new ComboBox<>();
+        priceField = new TextField();
 
-        Label carLabel = new Label("Авто");
-        Label startDateLabel = new Label("Дата");
-        Label priceLabel = new Label("Вартість");
+        descriptionField = new TextArea();
+        descriptionField.setPrefRowCount(3);
+        descriptionField.setWrapText(true);
+
+        datePicker = new DatePicker();
+
+        carMap = carUtil.getAllCarComboMap(true);
 
         carField.getItems().addAll(carMap.values());
         new AutoCompleteComboBoxListener<>(carField);
 
-        if(selectedRegistration != null){
-            id = selectedRegistration.getId();
-            String carBoxValue = carMap.get(selectedRegistration.getCarId());
+
+        grid = new GridPane();
+
+        Label carLabel = new Label("Авто");
+        Label priceLabel = new Label("Вартість");
+        Label descriptionLabel = new Label("Опис");
+        Label dateLabel = new Label("Дата");
+
+        if(selected != null) {
+            id = selected.getId();
+            String carBoxValue = carMap.get(selected.getCarId());
             if (carBoxValue != null) {
                 carField.setValue(carBoxValue);
             }
-            datePicker.setValue(selectedRegistration.getRegistrationDate());
-            priceField.setText(String.valueOf(selectedRegistration.getPrice()));
+            descriptionField.setText(selected.getDescription());
+            priceField.setText(String.valueOf(selected.getPrice()));
+            datePicker.setValue(selected.getDate());
         }
 
         grid = PagesUtil.buildGridDouble(
                 carLabel, carField,
-                startDateLabel, datePicker,
-                priceLabel, priceField
+                priceLabel, priceField,
+                dateLabel, datePicker,
+                descriptionLabel, descriptionField
         );
 
         javafx.scene.control.Button saveButton = new javafx.scene.control.Button("Зберегти");
 
         saveButton.setOnAction(e ->{
-            handleAction(selectedRegistration != null);
+            handleAction(selected != null);
         });
 
         VBox vbox = new VBox();
         vbox.getChildren().addAll(grid, saveButton);
 
         mainPage.openInternalWindow(vbox, windowTitle, false);
-
     }
 
     private void handleAction(boolean isEditing){
@@ -97,7 +105,7 @@ public class RegistrationCardController extends WindowController {
             AlertsUtil.ErrorAlert("Помилка вводу", "Введіть усі необхідні дані").showAndWait();
         } else {
             try {
-                AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати реєстрацію" : "Додати реєстрацію").showAndWait().ifPresent(response -> {
+                AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати амортизацію" : "Додати амортизацію").showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
                         String selectedCarString = carField.getValue();
                         int selectedCarId = carMap.entrySet().stream()
@@ -106,19 +114,20 @@ public class RegistrationCardController extends WindowController {
                                 .findFirst()
                                 .orElse(-1);
 
-                        _Registration registration = new _Registration(
+                        _CarDepreciation depreciation = new _CarDepreciation(
                                 selectedCarId,
+                                datePicker.getValue(),
                                 Double.parseDouble(priceField.getText().replace(",", ".")),
-                                datePicker.getValue());
+                                descriptionField.getText());
                         if(isEditing){
-                            registration.setId(id);
-                            registrationUtil.editRegistration(registration);
+                            depreciation.setId(id);
+                            carDepreciationUtil.editDepreciation(depreciation);
                         }
                         else
-                            registrationUtil.addRegistration(registration);
+                            carDepreciationUtil.addDepreciation(depreciation);
 
                         mainPage.closeInternalWindow(windowTitle);
-                        registrationJournalController.updateValues();
+                        carDepreciationJournalController.updateValues();
                     }
                 });
             } catch (NumberFormatException ex) {
@@ -128,15 +137,6 @@ public class RegistrationCardController extends WindowController {
     }
 
     private boolean checkInput() {
-        return (datePicker.getValue() == null || !isDouble(priceField.getText()) || carField.getValue() == null);
-    }
-
-    private void addSelectedCarToMap(int carId) {
-        if (!carMap.containsKey(carId)) {
-            _Car car = carUtil.getCarById(carId);
-            if (car != null) {
-                carMap.put(car.getId(), car.getBoxString());
-            }
-        }
+        return (!isDouble(priceField.getText()) || datePicker.getValue() == null || carField.getValue() == null);
     }
 }

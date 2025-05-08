@@ -4,13 +4,20 @@ import com.work.oblikcars.Utils.*;
 import com.work.oblikcars.Utils.DB.DBUtil;
 import com.work.oblikcars.Utils.DB.UserUtil;
 import com.work.oblikcars.pages.handbooks.cars.CarsHandbookController;
+import com.work.oblikcars.pages.journals.cardepreciation.CarDepreciationJournalController;
+import com.work.oblikcars.pages.journals.cardisposal.CarDisposalJournalController;
 import com.work.oblikcars.pages.journals.inspection.InspectionJournalController;
 import com.work.oblikcars.pages.journals.insurance.InsuranceJournalController;
 import com.work.oblikcars.pages.journals.list.ListJournalController;
 import com.work.oblikcars.pages.journals.registration.RegistrationJournalController;
 import com.work.oblikcars.pages.registers.car.CarRegisterController;
+import com.work.oblikcars.pages.registers.cardepreciation.CarDepreciationRegisterController;
+import com.work.oblikcars.pages.registers.cardisposal.CarDisposalRegister;
+import com.work.oblikcars.pages.registers.inspection.InspectionRegisterСontroller;
+import com.work.oblikcars.pages.registers.insurance.InsuranceRegisterController;
 import com.work.oblikcars.pages.registers.list.ListRegisterController;
 import com.work.oblikcars.pages.registers.mileage.MileageRegisterController;
+import com.work.oblikcars.pages.registers.registration.RegistrationRegisterController;
 import com.work.oblikcars.pages.users.UsersController;
 import javafx.geometry.Insets;
 import javafx.scene.Cursor;
@@ -102,7 +109,7 @@ public class MainPage {
 
         Menu handbookMenu = new Menu("Довідники");
 
-        MenuItem carsHandbook = new MenuItem("Довідник транспортних засобів");
+        MenuItem carsHandbook = new MenuItem("Довідник авто");
         carsHandbook.setOnAction(e -> openСarsHandbook());
 
         handbookMenu.getItems().addAll(carsHandbook);
@@ -111,27 +118,41 @@ public class MainPage {
 
         MenuItem listJournal = new MenuItem("Журнал подорожніх листів");
         MenuItem inspectionJournal = new MenuItem("Журнал сервісів");
-        MenuItem insuranceJournal = new MenuItem("Журнал страховок");
-        MenuItem registrationJournal = new MenuItem("Журнал реєстрацій");
+        MenuItem insuranceJournal = new MenuItem("Журнал страхування");
+        MenuItem registrationJournal = new MenuItem("Журнал продовження реєстрації");
+        MenuItem carDepreciationJournal = new MenuItem("Журнал справедливої вартості авто");
+        MenuItem carDisposalJournal = new MenuItem("Журнал вибуття авто");
 
         listJournal.setOnAction(e -> openListJournal());
         insuranceJournal.setOnAction(e -> openInsuranceJournal());
         registrationJournal.setOnAction(e -> openRegistrationJournal());
+        carDepreciationJournal.setOnAction(e -> openСarDepreciationJournal());
+        carDisposalJournal.setOnAction(e -> openCarDisposalJournal());
         inspectionJournal.setOnAction(e -> openInspectionJournal());
 
-        JournalMenu.getItems().addAll(listJournal, insuranceJournal, registrationJournal, inspectionJournal);
+        JournalMenu.getItems().addAll(listJournal, insuranceJournal, registrationJournal, inspectionJournal, carDepreciationJournal, carDisposalJournal);
 
         Menu RegisterMenu = new Menu("Реєстри");
         MenuItem listRegister = new MenuItem("Реєстр подорожніх листів");
         MenuItem mileageRegister = new MenuItem("Реєстр пройденого кілометражу");
         MenuItem spentRegister = new MenuItem("Реєстр супутніх затрат");
-        MenuItem carRegister = new MenuItem("Реєстр транспортних засобів");
+        MenuItem carRegister = new MenuItem("Реєстр авто");
+        MenuItem insuranceRegister = new MenuItem("Реєстр страхувань");
+        MenuItem serviceRegister = new MenuItem("Реєстр сервісів");
+        MenuItem carDepreciationRegister = new MenuItem("Реєстр справедливої вартості авто");
+        MenuItem carDisposalRegister = new MenuItem("Реєстр вибуття авто");
+        MenuItem registrationRegister = new MenuItem("Реєстр продовження реєстрації");
 
         spentRegister.setOnAction(e -> openSpentRegister());
         carRegister.setOnAction(e -> openCarRegister());
         mileageRegister.setOnAction(e -> openMileageRegister());
         listRegister.setOnAction(e -> openListRegister());
-        RegisterMenu.getItems().addAll(listRegister, mileageRegister, spentRegister, carRegister);
+        insuranceRegister.setOnAction(e -> openInsuranceRegister());
+        serviceRegister.setOnAction(e -> openServiceRegister());
+        carDepreciationRegister.setOnAction(e -> openCarDepreciationRegister());
+        carDisposalRegister.setOnAction( e-> openCarDisposalRegister());
+        registrationRegister.setOnAction( e-> openRegistrationRegister());
+        RegisterMenu.getItems().addAll(listRegister, mileageRegister, carRegister, insuranceRegister, serviceRegister, carDepreciationRegister, carDisposalRegister, registrationRegister);
 
         menuBar.getMenus().addAll(handbookMenu, JournalMenu, RegisterMenu);
 
@@ -225,6 +246,14 @@ public class MainPage {
         InsuranceJournalController controller = new InsuranceJournalController();
         controller.openWindow();
     }
+    private void openСarDepreciationJournal() {
+        CarDepreciationJournalController controller = new CarDepreciationJournalController();
+        controller.openWindow();
+    }
+    private void openCarDisposalJournal() {
+        CarDisposalJournalController controller = new CarDisposalJournalController();
+        controller.openWindow();
+    }
 
     //registers
     private void openMileageRegister() {
@@ -238,6 +267,26 @@ public class MainPage {
     }
     private void openCarRegister(){
         CarRegisterController controller = new CarRegisterController();
+        controller.openWindow();
+    }
+    private void openInsuranceRegister() {
+        InsuranceRegisterController controller = new InsuranceRegisterController();
+        controller.openWindow();
+    }
+    private void openServiceRegister() {
+        InspectionRegisterСontroller controller = new InspectionRegisterСontroller();
+        controller.openWindow();
+    }
+    private void openCarDepreciationRegister() {
+        CarDepreciationRegisterController controller = new CarDepreciationRegisterController();
+        controller.openWindow();
+    }
+    private void openCarDisposalRegister() {
+        CarDisposalRegister controller = new CarDisposalRegister();
+        controller.openWindow();
+    }
+    private void openRegistrationRegister() {
+        RegistrationRegisterController controller = new RegistrationRegisterController();
         controller.openWindow();
     }
 

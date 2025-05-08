@@ -1,30 +1,45 @@
 package com.work.oblikcars.model;
 
 import java.time.LocalDate;
+import java.time.format.TextStyle;
+import java.util.Locale;
 
 public class _Insurance {
+    private int number;
     private int id;
-    private int carId;
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private int numberOfCars;
+    private LocalDate payDate;
+    private LocalDate month;
+    private String monthStr;
     private double price;
 
-    public _Insurance() {
+    public _Insurance(int numberOfCars, LocalDate payDate, LocalDate month, double price) {
+        this.numberOfCars = numberOfCars;
+        this.payDate = payDate;
+        this.month = month;
+        this.price = price;
+        monthStr = month.getMonth()
+                .getDisplayName(TextStyle.FULL_STANDALONE, new Locale("uk"))
+                + " " + month.getYear();
     }
 
-    public _Insurance(int id, int carId, LocalDate startDate, LocalDate endDate, double price) {
+    public int getNumber() {
+        return number;
+    }
+
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    public _Insurance(int id, int numberOfCars, LocalDate payDate, LocalDate month, double price) {
         this.id = id;
-        this.carId = carId;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.numberOfCars = numberOfCars;
+        this.payDate = payDate;
+        this.month = month;
         this.price = price;
-    }
-
-    public _Insurance(int carId, LocalDate startDate, LocalDate endDate, double price) {
-        this.carId = carId;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.price = price;
+        monthStr = month.getMonth()
+                .getDisplayName(TextStyle.FULL_STANDALONE, new Locale("uk"))
+                + " " + month.getYear();
     }
 
     public int getId() {
@@ -35,28 +50,36 @@ public class _Insurance {
         this.id = id;
     }
 
-    public int getCarId() {
-        return carId;
+    public int getNumberOfCars() {
+        return numberOfCars;
     }
 
-    public void setCarId(int carId) {
-        this.carId = carId;
+    public void setNumberOfCars(int numberOfCars) {
+        this.numberOfCars = numberOfCars;
     }
 
-    public LocalDate getStartDate() {
-        return startDate;
+    public LocalDate getPayDate() {
+        return payDate;
     }
 
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
+    public void setPayDate(LocalDate payDate) {
+        this.payDate = payDate;
     }
 
-    public LocalDate getEndDate() {
-        return endDate;
+    public LocalDate getMonth() {
+        return month;
     }
 
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
+    public void setMonth(LocalDate month) {
+        this.month = month;
+    }
+
+    public String getMonthStr() {
+        return monthStr;
+    }
+
+    public void setMonthStr(String monthStr) {
+        this.monthStr = monthStr;
     }
 
     public double getPrice() {

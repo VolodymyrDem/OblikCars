@@ -1,17 +1,17 @@
-package com.work.oblikcars.pages.journals.registration;
+package com.work.oblikcars.pages.registers.registration;
 
 import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.DBUtil;
-import com.work.oblikcars.Utils.DB.ListUtil;
 import com.work.oblikcars.Utils.DB.RegistrationUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Car;
-import com.work.oblikcars.model._List;
+import com.work.oblikcars.model._CarDepreciation;
 import com.work.oblikcars.model._Registration;
 import com.work.oblikcars.pages.MainPage;
+import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.journals.list.ListCardController;
+import com.work.oblikcars.pages.journals.registration.RegistrationCardController;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -24,11 +24,13 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
-public class RegistrationJournalController extends WindowController {
+public class RegistrationRegisterController extends WindowController {
     private ObservableList<_Registration> registrations;
     private MainPage mainPage;
     private RegistrationUtil registrationUtil;
@@ -36,11 +38,15 @@ public class RegistrationJournalController extends WindowController {
     private VBox tableContainer;
     private Pagination pagination;
     private CarUtil carUtil;
+    private DatePicker startDate;
+    private DatePicker endDate;
+    private CheckComboBox<String> carField;
+    Map<Integer, String> carMap;
 
-    public RegistrationJournalController(){}
+    public RegistrationRegisterController(){}
 
     public void openWindow(){
-        String windowTitle = "Журнал: продовження реєстрації";
+        String windowTitle = "Реєстр: продовження реєстрації";
         mainPage = MainPage.getInstance();
 
         if(mainPage.checkOpenWindow(windowTitle))return;
@@ -49,30 +55,59 @@ public class RegistrationJournalController extends WindowController {
         registrationsTable = new TableView<>();
         registrations = FXCollections.observableArrayList();
         carUtil = CarUtil.getInstance();
+        carMap = carUtil.getAllCarComboMap(true);
 
 
-        Button addButton = new Button("Додати реєстрацію");
-        addButton.setGraphic(IconsUtil.getPlusIcon());
-        addButton.getStyleClass().add("green-button");
-
-        Button editButton = new Button("Редагувати реєстрацію");
-        editButton.setGraphic(IconsUtil.getPencilIcon());
-        editButton.setDisable(true);
-        editButton.getStyleClass().add("yellow-button");
-
-        Button DeleteButton = new Button("Видалити реєстрацію");
-        DeleteButton.setGraphic(IconsUtil.getRubbishIcon());
-        DeleteButton.setDisable(true);
-        DeleteButton.getStyleClass().add("red-button");
+        Label carLabel = new Label("Авто:");
+        Label timeLabel = new Label("Період: з ");
+        Label timeLabel2 = new Label("по");
+        Button filterButton = new Button("Застосувати фільтр");
+        filterButton.setGraphic(IconsUtil.getFilterIcon());
+        Button saveButton = new Button("Зберегти реєстр");
+        saveButton.setGraphic(IconsUtil.getTikIcon());
+        Button settingsButton = new Button();
+        settingsButton.setGraphic(IconsUtil.getClockIcon());
+        startDate = new DatePicker();
+        endDate = new DatePicker();
+        carField = new CheckComboBox<>();
+        carField.setPrefWidth(200);
+        carField.setMaxWidth(200);
+        carField.setMinWidth(200);
+        carField.getItems().addAll(carMap.values());
+        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
+        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
+        filterButton.getStyleClass().add("uniform-button");
+        saveButton.getStyleClass().add("uniform-button");
 
         Button updateButton = new Button();
         updateButton.getStyleClass().add("grey-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
 
-        addButton.getStyleClass().add("uniform-button");
-        editButton.getStyleClass().add("uniform-button");
-        DeleteButton.getStyleClass().add("uniform-button");
-        updateButton.getStyleClass().add("uniform-button");
+        filterButton.setOnAction(event -> {
+            updateValues();
+        });
+
+        updateButton.setOnAction(event -> {
+            updateValues();
+        });
+
+        settingsButton.setOnAction(e-> {
+            new PeriodController(
+                    "Реєстр: продовження реєстрації — налаштування періоду",
+                    this::updateDates
+            ).openWindow();
+        });
+
+        toggleCarSelectionBtn.setOnAction(e -> {
+            var checkModel = carField.getCheckModel();
+            if (checkModel.getCheckedItems().isEmpty()) {
+                // якщо нічого не обрано — обираємо всі
+                carField.getItems().forEach(item -> checkModel.check(item));
+            } else {
+                // якщо є хоча б один — чистимо вибір
+                checkModel.clearChecks();
+            }
+        });
 
         TableColumn<_Registration, String> carCol = new TableColumn<>("Авто");
         carCol.setCellValueFactory(cellData -> {
@@ -91,52 +126,11 @@ public class RegistrationJournalController extends WindowController {
 
         registrationsTable.getColumns().addAll(carCol, dateCol, priceCol);
 
-        registrationsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            boolean isItemSelected = newSelection != null;
-            editButton.setDisable(!isItemSelected);
-            DeleteButton.setDisable(!isItemSelected);
-
-        });
-
-        editButton.setOnAction(e -> {
-            _Registration selectedReg = registrationsTable.getSelectionModel().getSelectedItem();
-            if (selectedReg != null) {
-                RegistrationCardController controller = new RegistrationCardController();
-                controller.openWindow(this, selectedReg);
-            }
-        });
-
-        updateButton.setOnAction(e->{
-            updateValues();
-        });
-
-        addButton.setOnAction(e -> {
-            RegistrationCardController controller = new RegistrationCardController();
-            controller.openWindow(this, null);
-        });
-
-        DeleteButton.setOnAction(e->{
-            _Registration selectedReg = registrationsTable.getSelectionModel().getSelectedItem();
-            if (selectedReg != null) {
-                Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити реєстрацію");
-                confirmationAlert.showAndWait().ifPresent(response -> {
-                    if (response == ButtonType.OK) {
-                        registrationUtil.deleteRegistration(selectedReg);
-                        updateValues();
-                    }
-                });
-
-            }
-        });
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
 
-        HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
-
-        if(DBUtil.getInstance().getUsername().equals("root")){
-            buttonBox.getChildren().add(DeleteButton);
-        }
+        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton);
 
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
@@ -188,16 +182,40 @@ public class RegistrationJournalController extends WindowController {
     }
 
     public void updateValues() {
+        LocalDate start = startDate.getValue();
+        LocalDate end = endDate.getValue();
+
+        List<String> selectedCarNames = carField.getCheckModel().getCheckedItems();
+
+        List<Integer> selectedCarIds = carMap.entrySet().stream()
+                .filter(entry -> selectedCarNames.contains(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
+
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                List<_Registration> newReg;
-                newReg = registrationUtil.getAllRegistrations().stream()
-                        .sorted((c1, c2) -> Integer.compare(c1.getId(), c2.getId()))
-                        .toList();
 
+                List<_Registration> newReg;
+
+                // Перевірка, чи є вибрані carId
+                if (selectedCarIds == null || selectedCarIds.isEmpty()) {
+                    // Якщо жодне авто не вибране, беремо ВСІ carId:
+                    List<Integer> allCarIds = carMap.keySet().stream().toList();
+
+                    // Викликаємо фільтрацію за датами і всіма машинами:
+                    newReg = registrationUtil.getRegistrationsByCarsDates(start, end, allCarIds).stream()
+                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
+                            .toList();
+                } else {
+                    // Якщо вибрані конкретні авто — фільтруємо за ними
+                    newReg = registrationUtil.getRegistrationsByCarsDates(start, end, selectedCarIds).stream()
+                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
+                            .toList();
+                }
 
                 Platform.runLater(() -> {
+
                     registrations.setAll(newReg);
 
                     int pageCount = (int) Math.ceil((double) registrations.size() / rowsPerPage);
@@ -230,5 +248,10 @@ public class RegistrationJournalController extends WindowController {
         }
 
         return new VBox();
+    }
+
+    public void updateDates(LocalDate start, LocalDate end) {
+        startDate.setValue(start);
+        endDate.setValue(end);
     }
 }

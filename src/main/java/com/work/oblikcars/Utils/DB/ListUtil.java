@@ -149,7 +149,7 @@ public class ListUtil {
                     int  rents = rs.getInt("rents");
                     int rentDays = rs.getInt("rentDays");
                     double income = rs.getDouble("income");
-                    list = new _List(id, carId, startMileage, startDate, endMileage, eDate, rents, rentDays, done, income,  description);
+                    list = new _List(id, carId, startMileage, sDate, endMileage, eDate, rents, rentDays, done, income,  description);
                 } else {
                     list = new _List(id, carId, startMileage, sDate, false,  description);
                 }

@@ -1,5 +1,6 @@
 package com.work.oblikcars.pages.journals.insurance;
 
+import com.work.oblikcars.Factories.MonthYearSpinnerValueFactory;
 import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.AutoCompleteComboBoxListener;
 import com.work.oblikcars.Utils.DB.CarUtil;
@@ -13,6 +14,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
+import java.time.LocalDate;
+import java.time.Year;
 import java.util.Map;
 
 public class InsuranceCardController extends WindowController {
@@ -23,16 +26,15 @@ public class InsuranceCardController extends WindowController {
     private CarUtil carUtil;
     private InsuranceUtil insuranceUtil;
     private GridPane grid;
-    Map<Integer, String> carMap;
 
-
-    private ComboBox<String> carField;
-    private DatePicker startDatePicker;
-    private DatePicker endDatePicker;
+    private DatePicker payDatePicker;
+    private TextField NumberOfCarsField;
+    private Spinner<String> monthSpinner;
     private TextField priceField;
     private String windowTitle;
     private InsuranceJournalController insuranceJournalController;
     private int id;
+    private MonthYearSpinnerValueFactory mFactory;
 
     public void openWindow(InsuranceJournalController journal, _Insurance selectedInsurance) {
         windowTitle = (selectedInsurance == null)?"Журнал: страхування - додати страхування" : "Журнал: страхування - редагувати страхування";
@@ -43,44 +45,48 @@ public class InsuranceCardController extends WindowController {
 
         carUtil = CarUtil.getInstance();
 
-        carField = new ComboBox<>();
-        startDatePicker = new DatePicker();
-        endDatePicker = new DatePicker();
+        payDatePicker = new DatePicker();
+        NumberOfCarsField = new TextField();
         priceField = new TextField();
 
-
-        carMap = carUtil.getCarAvailableForInsuranceComboMap(true);
         if (selectedInsurance != null) {
-            addSelectedCarToMap(selectedInsurance.getCarId());
+            // беремо місяць/рік із того дня оплати, щоб при редагуванні показати саме цей місяць
+            LocalDate payDate = selectedInsurance.getMonth();
+            mFactory = new MonthYearSpinnerValueFactory(
+                    payDate.getMonthValue(),
+                    payDate.getYear()
+            );
+        } else {
+            // новий запис — заразішній місяць-рік
+            LocalDate now = LocalDate.now();
+            mFactory = new MonthYearSpinnerValueFactory(
+                    now.getMonthValue(),
+                    now.getYear()
+            );
         }
+        monthSpinner = new Spinner<>(mFactory);
+
 
         insuranceUtil = InsuranceUtil.getInstance();
         insuranceJournalController = journal;
         grid = new GridPane();
 
-        Label carLabel = new Label("Транспортний засіб");
-        Label startDateLabel = new Label("Дата початку");
-        Label endDateLabel = new Label("Дата закінчення");
-        Label priceLabel = new Label("Ціна");
-
-        carField.getItems().addAll(carMap.values());
-        new AutoCompleteComboBoxListener<>(carField);
+        Label carLabel = new Label("кількість авто");
+        Label payDateLabel = new Label("Дата оплати");
+        Label monthLabel = new Label("Місяць");
+        Label priceLabel = new Label("Вартість");
 
         if(selectedInsurance != null){
-            id = selectedInsurance.getId();
-            String carBoxValue = carMap.get(selectedInsurance.getCarId());
-            if (carBoxValue != null) {
-                carField.setValue(carBoxValue);
-            }
-            startDatePicker.setValue(selectedInsurance.getStartDate());
-            endDatePicker.setValue(selectedInsurance.getEndDate());
+            this.id = selectedInsurance.getId();
+            payDatePicker.setValue(selectedInsurance.getPayDate());
+            NumberOfCarsField.setText(String.valueOf(selectedInsurance.getNumberOfCars()));
             priceField.setText(String.valueOf(selectedInsurance.getPrice()));
         }
 
         grid = PagesUtil.buildGridDouble(
-                carLabel, carField,
-                startDateLabel, startDatePicker,
-                endDateLabel, endDatePicker,
+                carLabel, NumberOfCarsField,
+                payDateLabel, payDatePicker,
+                monthLabel, monthSpinner,
                 priceLabel, priceField
         );
 
@@ -104,18 +110,13 @@ public class InsuranceCardController extends WindowController {
             try {
                 AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати страхування" : "Додати страхування").showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
-                        String selectedCarString = carField.getValue();
-                        int selectedCarId = carMap.entrySet().stream()
-                                .filter(entry -> entry.getValue().equals(selectedCarString))
-                                .map(Map.Entry::getKey)
-                                .findFirst()
-                                .orElse(-1);
-
                         _Insurance insurance = new _Insurance(
-                                selectedCarId,
-                                startDatePicker.getValue(),
-                                endDatePicker.getValue(),
-                                Double.parseDouble(priceField.getText().replace(",", ".")));
+                                Integer.parseInt(NumberOfCarsField.getText()),
+                                payDatePicker.getValue(),
+                                mFactory.getStartDate(),
+                                Double.parseDouble(priceField.getText().replace(",", "."))
+                                );
+
                         if(isEditing){
                             insurance.setId(id);
                             insuranceUtil.editInsurance(insurance);
@@ -133,16 +134,12 @@ public class InsuranceCardController extends WindowController {
         }
     }
 
-    private boolean checkInput() {
-        return (startDatePicker.getValue() == null || endDatePicker.getValue() == null || !isDouble(priceField.getText()) || carField.getValue() == null);
+    protected boolean checkInput() {
+        return (payDatePicker.getValue() == null
+                || monthSpinner.getValue() == null
+                || !isDouble(priceField.getText())
+                || !isInteger(NumberOfCarsField.getText()));
     }
 
-    private void addSelectedCarToMap(int carId) {
-        if (!carMap.containsKey(carId)) {
-            _Car car = carUtil.getCarById(carId);
-            if (car != null) {
-                carMap.put(car.getId(), car.getBoxString());
-            }
-        }
-    }
+
 }

@@ -20,7 +20,7 @@ public class ListCardController extends WindowController{
     private CarUtil carUtil;
     private ListUtil listUtil;
     private GridPane grid;
-    Map<Integer, String> carMap;
+    private Map<Integer, String> carMap;
 
 
     private ComboBox<String> carField;
@@ -74,11 +74,11 @@ public class ListCardController extends WindowController{
         listJournalController = journal;
         grid = new GridPane();
 
-        Label carLabel = new Label("Транспортний засіб");
+        Label carLabel = new Label("Авто");
         Label startDateLabel = new Label("Дата початку");
-        Label startMileageLabel = new Label("Пробіг на початку");
+        Label startMileageLabel = new Label("Початковий пробіг");
         Label endDateLabel = new Label("Дата завершення");
-        Label endMileageLabel = new Label("Пробіг у кінці");
+        Label endMileageLabel = new Label("Кінцевий пробіг");
         Label rentDaysLabel = new Label("Кількість днів ренти");
         Label rentsLabel = new Label("Кількість рент");
         Label incomeLabel = new Label("Рентний дохід");

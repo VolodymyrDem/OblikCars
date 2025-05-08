@@ -2,11 +2,15 @@ package com.work.oblikcars.pages;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
@@ -16,6 +20,7 @@ import java.util.stream.Collectors;
 public abstract class WindowController {
 
     protected int rowsPerPage = 20;
+    protected DecimalFormat df = new DecimalFormat("#.00");
 
     protected DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -55,5 +60,25 @@ public abstract class WindowController {
     }
     protected void moveTableDown(TableView<?> tableView) {
         tableView.scrollTo(tableView.getItems().size());
+    }
+
+    protected <S> void formatDoubleColumn(TableColumn<S, Double> column, String pattern) {
+        // 1. Налаштовуємо символи: крапка як десятковий роздільник
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setDecimalSeparator('.');
+        // 2. Створюємо форматер із цими символами
+        DecimalFormat df = new DecimalFormat(pattern, symbols);
+
+        column.setCellFactory(col -> new TableCell<S, Double>() {
+            @Override
+            protected void updateItem(Double value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty || value == null) {
+                    setText(null);
+                } else {
+                    setText(df.format(value));  // тепер замість коми буде крапка
+                }
+            }
+        });
     }
 }

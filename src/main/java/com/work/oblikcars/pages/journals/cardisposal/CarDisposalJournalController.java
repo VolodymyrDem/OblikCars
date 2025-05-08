@@ -1,17 +1,16 @@
-package com.work.oblikcars.pages.journals.insurance;
+package com.work.oblikcars.pages.journals.cardisposal;
 
 import com.work.oblikcars.Utils.AlertsUtil;
+import com.work.oblikcars.Utils.DB.CarDisposalUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.DBUtil;
-import com.work.oblikcars.Utils.DB.InsuranceUtil;
-import com.work.oblikcars.Utils.DB.ListUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Car;
-import com.work.oblikcars.model._Insurance;
-import com.work.oblikcars.model._Insurance;
+import com.work.oblikcars.model._CarDisposal;
+import com.work.oblikcars.model._List;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.journals.insurance.InsuranceCardController;
+import com.work.oblikcars.pages.journals.list.ListCardController;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -28,38 +27,37 @@ import javafx.scene.layout.VBox;
 import java.time.LocalDate;
 import java.util.List;
 
-public class InsuranceJournalController extends WindowController {
-    private ObservableList<_Insurance> insurances;
+public class CarDisposalJournalController extends WindowController {
+    private ObservableList<_CarDisposal> carDisposals;
     private MainPage mainPage;
-    private InsuranceUtil insuranceUtil;
-    private TableView<_Insurance> insuranceTable;
+    private CarDisposalUtil carDisposalUtil;
+    private TableView<_CarDisposal> carDisposalTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private CarUtil carUtil;
 
+    public CarDisposalJournalController(){}
 
-    public InsuranceJournalController(){}
-
-    public void openWindow(){
-        String windowTitle = "Журнал: страхування";
+    public void openWindow() {
+        String windowTitle = "Журнал: вибуття авто";
         mainPage = MainPage.getInstance();
-
         if(mainPage.checkOpenWindow(windowTitle))return;
 
-        insuranceUtil = InsuranceUtil.getInstance();
-        insuranceTable = new TableView<>();
-        insurances = FXCollections.observableArrayList();
+        carDisposalUtil = CarDisposalUtil.getInstance();
+        carDisposalTable = new TableView<>();
+        carDisposals = FXCollections.observableArrayList();
+        carUtil = CarUtil.getInstance();
 
-
-        Button addButton = new Button("Додати страхування");
+        Button addButton = new Button("Додати вибуття");
         addButton.setGraphic(IconsUtil.getPlusIcon());
         addButton.getStyleClass().add("green-button");
 
-        Button editButton = new Button("Редагувати страхування");
+        Button editButton = new Button("Редагувати вибуття");
         editButton.setGraphic(IconsUtil.getPencilIcon());
         editButton.setDisable(true);
         editButton.getStyleClass().add("yellow-button");
 
-        Button DeleteButton = new Button("Видалити страхування");
+        Button DeleteButton = new Button("Видалити вибуття");
         DeleteButton.setGraphic(IconsUtil.getRubbishIcon());
         DeleteButton.setDisable(true);
         DeleteButton.getStyleClass().add("red-button");
@@ -73,31 +71,37 @@ public class InsuranceJournalController extends WindowController {
         DeleteButton.getStyleClass().add("uniform-button");
         updateButton.getStyleClass().add("uniform-button");
 
-        TableColumn<_Insurance, Integer> carCol = new TableColumn<>("Кіль-ть авто");
-        carCol.setCellValueFactory(new PropertyValueFactory<>("numberOfCars"));
+        TableColumn<_CarDisposal, String> carCol = new TableColumn<>("Авто");
+        carCol.setCellValueFactory(cellData -> {
+            _Car car = carUtil.getCarById(cellData.getValue().getCarId());
+            String boxString = (car != null) ? car.getBoxString() : "Невідомо";
+            return new ReadOnlyStringWrapper(boxString);
+        });
+        TableColumn<_CarDisposal, LocalDate> dateCol = new TableColumn<>("Дата");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
 
-        TableColumn<_Insurance, LocalDate> startDateCol = new TableColumn<>("Дата оплати");
-        startDateCol.setCellValueFactory(new PropertyValueFactory<>("payDate"));
+        TableColumn<_CarDisposal, LocalDate> reasonCol = new TableColumn<>("Причина");
+        reasonCol.setCellValueFactory(new PropertyValueFactory<>("reason"));
 
-        TableColumn<_Insurance, LocalDate> endDateCol = new TableColumn<>("Місяць");
-        endDateCol.setCellValueFactory(new PropertyValueFactory<>("monthStr"));
-
-        TableColumn<_Insurance, LocalDate> priceCol = new TableColumn<>("Вартість");
+        TableColumn<_CarDisposal, LocalDate> priceCol = new TableColumn<>("Вартість");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
 
-        insuranceTable.getColumns().addAll(carCol, startDateCol, endDateCol, priceCol);
+        TableColumn<_CarDisposal, LocalDate> descriptionCol = new TableColumn<>("Коментар");
+        descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        insuranceTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+        carDisposalTable.getColumns().addAll(carCol, dateCol, reasonCol, priceCol, descriptionCol);
+
+        carDisposalTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean isItemSelected = newSelection != null;
             editButton.setDisable(!isItemSelected);
             DeleteButton.setDisable(!isItemSelected);
         });
 
         editButton.setOnAction(e -> {
-            _Insurance selectedInsurance = insuranceTable.getSelectionModel().getSelectedItem();
-            if (selectedInsurance != null) {
-                InsuranceCardController controller = new InsuranceCardController();
-                controller.openWindow(this, selectedInsurance);
+            _CarDisposal selected = carDisposalTable.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                CarDisposalCardController controller = new CarDisposalCardController();
+                controller.openWindow(this, selected);
             }
         });
 
@@ -106,21 +110,21 @@ public class InsuranceJournalController extends WindowController {
         });
 
         addButton.setOnAction(e -> {
-            InsuranceCardController controller = new InsuranceCardController();
+            CarDisposalCardController controller = new CarDisposalCardController();
             controller.openWindow(this, null);
         });
 
         DeleteButton.setOnAction(e->{
-            _Insurance selectedInsurance = insuranceTable.getSelectionModel().getSelectedItem();
-            if (selectedInsurance != null) {
-                Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити страхування");
+            _CarDisposal selected = carDisposalTable.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити вибуття");
                 confirmationAlert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
-                        insuranceUtil.deleteInsurancePermanently(selectedInsurance);
+                        carUtil.markCarAsValidById(selected.getCarId());
+                        carDisposalUtil.deleteDisposal(selected);
                         updateValues();
                     }
                 });
-
             }
         });
 
@@ -135,10 +139,10 @@ public class InsuranceJournalController extends WindowController {
 
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        insuranceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(insuranceTable, Priority.ALWAYS);
+        carDisposalTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(carDisposalTable, Priority.ALWAYS);
 
-        tableContainer = new VBox(insuranceTable);
+        tableContainer = new VBox(carDisposalTable);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         updateValues();
@@ -161,7 +165,7 @@ public class InsuranceJournalController extends WindowController {
             }
         });
 
-        insuranceTable.setOnKeyPressed(event -> {
+        carDisposalTable.setOnKeyPressed(event -> {
             switch (event.getCode()) {
                 case RIGHT:
                     if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
@@ -179,34 +183,33 @@ public class InsuranceJournalController extends WindowController {
         table.getChildren().addAll(buttonBox,tableContainer, pagination);
 
         mainPage.openInternalWindow(table, windowTitle, true);
-
     }
 
     public void updateValues() {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                List<_Insurance> newLists;
-                newLists = insuranceUtil.getAllInsurances().stream()
+                List<_CarDisposal> newElements;
+                newElements = carDisposalUtil.getAllDisposals().stream()
                         .sorted((c1, c2) -> Integer.compare(c1.getId(), c2.getId()))
                         .toList();
 
 
                 Platform.runLater(() -> {
-                    insurances.setAll(newLists);
+                    carDisposals.setAll(newElements);
 
-                    int pageCount = (int) Math.ceil((double) insurances.size() / rowsPerPage);
+                    int pageCount = (int) Math.ceil((double) carDisposals.size() / rowsPerPage);
                     pagination.setPageCount(Math.max(pageCount, 1));
                     int lastPage = Math.max(pageCount - 1, 0);
                     pagination.setCurrentPageIndex(lastPage);
 
                     int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, insurances.size());
-                    insuranceTable.setItems(FXCollections.observableArrayList(insurances.subList(fromIndex, toIndex)));
+                    int toIndex = Math.min(fromIndex + rowsPerPage, carDisposals.size());
+                    carDisposalTable.setItems(FXCollections.observableArrayList(carDisposals.subList(fromIndex, toIndex)));
 
-                    tableContainer.getChildren().setAll(insuranceTable);
+                    tableContainer.getChildren().setAll(carDisposalTable);
 
-                    moveTableDown(insuranceTable);
+                    moveTableDown(carDisposalTable);
                 });
                 return null;
             }
@@ -216,12 +219,12 @@ public class InsuranceJournalController extends WindowController {
 
     private Node createPage(int pageIndex) {
         int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, insurances.size());
+        int toIndex = Math.min(fromIndex + rowsPerPage, carDisposals.size());
 
         if (fromIndex > toIndex) {
-            insuranceTable.setItems(FXCollections.observableArrayList());
+            carDisposalTable.setItems(FXCollections.observableArrayList());
         } else {
-            insuranceTable.setItems(FXCollections.observableArrayList(insurances.subList(fromIndex, toIndex)));
+            carDisposalTable.setItems(FXCollections.observableArrayList(carDisposals.subList(fromIndex, toIndex)));
         }
 
         return new VBox();

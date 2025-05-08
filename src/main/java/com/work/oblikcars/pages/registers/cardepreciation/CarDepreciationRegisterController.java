@@ -1,16 +1,17 @@
-package com.work.oblikcars.pages.registers.list;
+package com.work.oblikcars.pages.registers.cardepreciation;
 
 import com.work.oblikcars.Utils.AlertsUtil;
+import com.work.oblikcars.Utils.DB.CarDepreciationUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.DBUtil;
-import com.work.oblikcars.Utils.DB.ListUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Car;
-import com.work.oblikcars.model._List;
+import com.work.oblikcars.model._CarDepreciation;
+import com.work.oblikcars.model._Inspection;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.journals.list.ListCardController;
+import com.work.oblikcars.pages.journals.cardepreciation.CarDepreciationCardController;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -28,42 +29,40 @@ import org.controlsfx.control.CheckComboBox;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-public class ListRegisterController extends WindowController {
-    private ObservableList<_List> lists;
+public class CarDepreciationRegisterController extends WindowController {
+    private ObservableList<_CarDepreciation> depreciations;
     private MainPage mainPage;
-    private ListUtil listUtil;
-    private TableView<_List> listsTable;
+    private CarUtil carUtil;
+    private CarDepreciationUtil carDepreciationUtil;
+    private TableView<_CarDepreciation> carDepreciationTable;
     private VBox tableContainer;
     private Pagination pagination;
-    private CarUtil carUtil;
     private DatePicker startDate;
     private DatePicker endDate;
     private CheckComboBox<String> carField;
     Map<Integer, String> carMap;
 
-    public ListRegisterController(){}
 
-    public void openWindow(){
-        String windowTitle = "Реєстр: подорожні листи";
+    public CarDepreciationRegisterController() {
+    }
+
+    public void openWindow() {
+        String windowTitle = "Реєстр: справедлива вартість авто";
         mainPage = MainPage.getInstance();
 
-        if(mainPage.checkOpenWindow(windowTitle))return;
+        if(mainPage.checkOpenWindow(windowTitle)) return ;
 
-        listUtil = ListUtil.getInstance();
-        listsTable = new TableView<>();
-        lists = FXCollections.observableArrayList();
+        carDepreciationUtil = CarDepreciationUtil.getInstance();
+        carDepreciationTable = new TableView<>();
+        depreciations = FXCollections.observableArrayList();
         carUtil = CarUtil.getInstance();
-
         carMap = carUtil.getAllCarComboMap(true);
 
-        Label carLabel = new Label("Авто:");
+        Label carLabel = new Label("Авто: ");
         Label timeLabel = new Label("Період: з ");
         Label timeLabel2 = new Label("по");
         Button filterButton = new Button("Застосувати фільтр");
-        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
-        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
         filterButton.setGraphic(IconsUtil.getFilterIcon());
         Button saveButton = new Button("Зберегти реєстр");
         saveButton.setGraphic(IconsUtil.getTikIcon());
@@ -76,7 +75,8 @@ public class ListRegisterController extends WindowController {
         carField.setMaxWidth(200);
         carField.setMinWidth(200);
         carField.getItems().addAll(carMap.values());
-        //todo add new AutoCompleteComboBoxListener<>(carField); but for checkcombobox
+        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
+        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
         filterButton.getStyleClass().add("uniform-button");
         saveButton.getStyleClass().add("uniform-button");
 
@@ -84,7 +84,6 @@ public class ListRegisterController extends WindowController {
         updateButton.getStyleClass().add("grey-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
 
-        updateButton.getStyleClass().add("uniform-button");
         filterButton.setOnAction(event -> {
             updateValues();
         });
@@ -95,61 +94,52 @@ public class ListRegisterController extends WindowController {
 
         settingsButton.setOnAction(e-> {
             new PeriodController(
-                    "Реєстр: подорожні листи — налаштування періоду",
+                    "Реєстр: справедлива вартість авто — налаштування періоду",
                     this::updateDates
             ).openWindow();
         });
 
-        TableColumn<_List, String> carCol = new TableColumn<>("Авто");
+        toggleCarSelectionBtn.setOnAction(e -> {
+            var checkModel = carField.getCheckModel();
+            if (checkModel.getCheckedItems().isEmpty()) {
+                // якщо нічого не обрано — обираємо всі
+                carField.getItems().forEach(item -> checkModel.check(item));
+            } else {
+                // якщо є хоча б один — чистимо вибір
+                checkModel.clearChecks();
+            }
+        });
+
+
+        TableColumn<_CarDepreciation, String> carCol = new TableColumn<>("Авто");
         carCol.setCellValueFactory(cellData -> {
             _Car car = carUtil.getCarById(cellData.getValue().getCarId());
             String boxString = (car != null) ? car.getBoxString() : "Невідомо";
             return new ReadOnlyStringWrapper(boxString);
         });
 
-        TableColumn<_List, String> startMileageCol = new TableColumn<>("Початковий пробіг");
-        startMileageCol.setCellValueFactory(new PropertyValueFactory<>("startMileage"));
+        TableColumn<_CarDepreciation, LocalDate> dateCol = new TableColumn<>("Дата");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
 
-        TableColumn<_List, LocalDate> startDateCol = new TableColumn<>("Дата початку");
-        startDateCol.setCellValueFactory(new PropertyValueFactory<>("startDate"));
+        TableColumn<_CarDepreciation, LocalDate> priceCol = new TableColumn<>("Вартість");
+        priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
 
-        TableColumn<_List, String> endMileageCol = new TableColumn<>("Кінцевий пробіг");
-        endMileageCol.setCellValueFactory(cellData -> {
-            Double value = cellData.getValue().getEndMileage();
-            return new ReadOnlyStringWrapper(value != 0 ? String.valueOf(value) : "");
-        });
+        TableColumn<_CarDepreciation, LocalDate> descriptionCol = new TableColumn<>("Опис");
+        descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        TableColumn<_List, Double> incomeCol = new TableColumn<>("Загальний дохід");
-        incomeCol.setCellValueFactory(new PropertyValueFactory<>("income"));
+        carDepreciationTable.getColumns().addAll(carCol, dateCol, priceCol, descriptionCol);
 
-        formatDoubleColumn(incomeCol, "#.00");
-
-        TableColumn<_List, Double> incomeDayCol = new TableColumn<>("Вартість дня ренти");
-        incomeDayCol.setCellValueFactory(new PropertyValueFactory<>("avgDayCost"));
-
-        formatDoubleColumn(incomeDayCol, "#.00");
-
-        TableColumn<_List, LocalDate> endDateCol = new TableColumn<>("Дата завершення");
-        endDateCol.setCellValueFactory(new PropertyValueFactory<>("endDate"));
-
-
-        listsTable.getColumns().addAll(carCol, startDateCol, startMileageCol, endDateCol, endMileageCol, incomeCol, incomeDayCol);
-
-        listsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            boolean isItemSelected = newSelection != null;
-        });
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
 
         HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton);
-
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        listsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(listsTable, Priority.ALWAYS);
+        carDepreciationTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(carDepreciationTable, Priority.ALWAYS);
 
-        tableContainer = new VBox(listsTable);
+        tableContainer = new VBox(carDepreciationTable);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         updateValues();
@@ -172,7 +162,7 @@ public class ListRegisterController extends WindowController {
             }
         });
 
-        listsTable.setOnKeyPressed(event -> {
+        carDepreciationTable.setOnKeyPressed(event -> {
             switch (event.getCode()) {
                 case RIGHT:
                     if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
@@ -187,43 +177,27 @@ public class ListRegisterController extends WindowController {
             }
         });
 
-        toggleCarSelectionBtn.setOnAction(e -> {
-            var checkModel = carField.getCheckModel();
-            if (checkModel.getCheckedItems().isEmpty()) {
-                // якщо нічого не обрано — обираємо всі
-                carField.getItems().forEach(item -> checkModel.check(item));
-            } else {
-                // якщо є хоча б один — чистимо вибір
-                checkModel.clearChecks();
-            }
-        });
-
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
+        table.getChildren().addAll(buttonBox, tableContainer, pagination);
 
         mainPage.openInternalWindow(table, windowTitle, true);
 
     }
 
     public void updateValues() {
-            // 1. Зчитуємо дати з DatePicker
+        Task<Void> task = new Task<>() {
             LocalDate start = startDate.getValue();
             LocalDate end = endDate.getValue();
 
-            // 2. Збираємо вибрані значення з CheckComboBox (рядки)
             List<String> selectedCarNames = carField.getCheckModel().getCheckedItems();
 
-            // 3. Переводимо вибрані рядки у список ідентифікаторів
-            //    (порівнюючи зі значеннями з carMap)
             List<Integer> selectedCarIds = carMap.entrySet().stream()
                     .filter(entry -> selectedCarNames.contains(entry.getValue()))
                     .map(Map.Entry::getKey)
                     .toList();
 
-        Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-
-                List<_List> newLists;
+                List<_CarDepreciation> newItems;
 
                 // Перевірка, чи є вибрані carId
                 if (selectedCarIds == null || selectedCarIds.isEmpty()) {
@@ -231,32 +205,32 @@ public class ListRegisterController extends WindowController {
                     List<Integer> allCarIds = carMap.keySet().stream().toList();
 
                     // Викликаємо фільтрацію за датами і всіма машинами:
-                    newLists = listUtil.getListsByCarsDates(start, end, allCarIds).stream()
+                    newItems = carDepreciationUtil.getDepreciationsByCarsDates(start, end, allCarIds).stream()
                             .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
                             .toList();
                 } else {
                     // Якщо вибрані конкретні авто — фільтруємо за ними
-                    newLists = listUtil.getListsByCarsDates(start, end, selectedCarIds).stream()
+                    newItems = carDepreciationUtil.getDepreciationsByCarsDates(start, end, selectedCarIds).stream()
                             .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
                             .toList();
                 }
 
 
                 Platform.runLater(() -> {
-                    lists.setAll(newLists);
+                    depreciations.setAll(newItems);
 
-                    int pageCount = (int) Math.ceil((double) lists.size() / rowsPerPage);
+                    int pageCount = (int) Math.ceil((double) depreciations.size() / rowsPerPage);
                     pagination.setPageCount(Math.max(pageCount, 1));
                     int lastPage = Math.max(pageCount - 1, 0);
                     pagination.setCurrentPageIndex(lastPage);
 
                     int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, lists.size());
-                    listsTable.setItems(FXCollections.observableArrayList(lists.subList(fromIndex, toIndex)));
+                    int toIndex = Math.min(fromIndex + rowsPerPage, depreciations.size());
+                    carDepreciationTable.setItems(FXCollections.observableArrayList(depreciations.subList(fromIndex, toIndex)));
 
-                    tableContainer.getChildren().setAll(listsTable);
+                    tableContainer.getChildren().setAll(carDepreciationTable);
 
-                    moveTableDown(listsTable);
+                    moveTableDown(carDepreciationTable);
                 });
                 return null;
             }
@@ -266,12 +240,12 @@ public class ListRegisterController extends WindowController {
 
     private Node createPage(int pageIndex) {
         int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, lists.size());
+        int toIndex = Math.min(fromIndex + rowsPerPage, depreciations.size());
 
         if (fromIndex > toIndex) {
-            listsTable.setItems(FXCollections.observableArrayList());
+            carDepreciationTable.setItems(FXCollections.observableArrayList());
         } else {
-            listsTable.setItems(FXCollections.observableArrayList(lists.subList(fromIndex, toIndex)));
+            carDepreciationTable.setItems(FXCollections.observableArrayList(depreciations.subList(fromIndex, toIndex)));
         }
 
         return new VBox();

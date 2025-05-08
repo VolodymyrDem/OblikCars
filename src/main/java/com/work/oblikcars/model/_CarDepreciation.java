@@ -2,41 +2,32 @@ package com.work.oblikcars.model;
 
 import java.time.LocalDate;
 
-public class _Inspection {
+public class _CarDepreciation {
     private int id;
     private int carId;
-    private WorkType workType;
+    private LocalDate date;
     private double price;
     private String description;
-    private LocalDate date;
 
-    public _Inspection() {
+    public _CarDepreciation() {
     }
 
-    public _Inspection(int id, int carId, WorkType workType, double price, String description, LocalDate date) {
+    public _CarDepreciation(int id, int carId, LocalDate date, double price, String description) {
         this.id = id;
         this.carId = carId;
-        this.workType = workType;
+        this.date = date;
         this.price = price;
         this.description = description;
-        this.date = date;
     }
 
-    public _Inspection(int carId, WorkType workType, double price, String description,  LocalDate date) {
+    public _CarDepreciation(int carId, LocalDate date, double price, String description) {
         this.carId = carId;
-        this.workType = workType;
+        this.date = date;
         this.price = price;
         this.description = description;
-        this.date = date;
     }
 
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
+    // Getters and Setters
 
     public int getId() {
         return id;
@@ -54,12 +45,12 @@ public class _Inspection {
         this.carId = carId;
     }
 
-    public WorkType getWorkType() {
-        return workType;
+    public LocalDate getDate() {
+        return date;
     }
 
-    public void setWorkType(WorkType workType) {
-        this.workType = workType;
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 
     public double getPrice() {

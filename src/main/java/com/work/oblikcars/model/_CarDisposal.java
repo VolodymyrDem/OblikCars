@@ -2,40 +2,31 @@ package com.work.oblikcars.model;
 
 import java.time.LocalDate;
 
-public class _Inspection {
+public class _CarDisposal {
     private int id;
     private int carId;
-    private WorkType workType;
+    private LocalDate date;
+    private String reason;
     private double price;
     private String description;
-    private LocalDate date;
 
-    public _Inspection() {
+    public _CarDisposal() {}
+
+    public _CarDisposal(int carId, LocalDate date, String reason, double price, String description) {
+        this.carId = carId;
+        this.date = date;
+        this.reason = reason;
+        this.price = price;
+        this.description = description;
     }
 
-    public _Inspection(int id, int carId, WorkType workType, double price, String description, LocalDate date) {
+    public _CarDisposal(int id, int carId, LocalDate date, String reason, double price, String description) {
         this.id = id;
         this.carId = carId;
-        this.workType = workType;
+        this.date = date;
+        this.reason = reason;
         this.price = price;
         this.description = description;
-        this.date = date;
-    }
-
-    public _Inspection(int carId, WorkType workType, double price, String description,  LocalDate date) {
-        this.carId = carId;
-        this.workType = workType;
-        this.price = price;
-        this.description = description;
-        this.date = date;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
     }
 
     public int getId() {
@@ -54,12 +45,20 @@ public class _Inspection {
         this.carId = carId;
     }
 
-    public WorkType getWorkType() {
-        return workType;
+    public LocalDate getDate() {
+        return date;
     }
 
-    public void setWorkType(WorkType workType) {
-        this.workType = workType;
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
     }
 
     public double getPrice() {

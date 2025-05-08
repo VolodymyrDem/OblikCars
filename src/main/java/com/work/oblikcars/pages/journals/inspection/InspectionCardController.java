@@ -28,19 +28,20 @@ public class InspectionCardController extends WindowController {
     private CarUtil carUtil;
     private InspectionUtil inspectionUtil;
     private GridPane grid;
-    Map<Integer, String> carMap;
+    private Map<Integer, String> carMap;
     private ComboBox<WorkType> workTypeField;
 
     private ComboBox<String> carField;
     private TextField priceField;
     private TextArea descriptionField;
+    private DatePicker datePicker;
 
     private String windowTitle;
     private InspectionJournalController inspectionJournalController;
     private int id;
 
     public void openWindow(InspectionJournalController journal, _Inspection selectedInspection) {
-        windowTitle = (selectedInspection == null)?"Журнал: сервіс - додати сервіс" : "Журнал: сервіс - редагувати сервіс";
+        windowTitle = (selectedInspection == null)?"Журнал: сервіси - додати сервіс" : "Журнал: сервіси - редагувати сервіс";
 
         mainPage = MainPage.getInstance();
 
@@ -52,7 +53,7 @@ public class InspectionCardController extends WindowController {
 
         priceField = new TextField();
         descriptionField = new TextArea();
-
+        datePicker = new DatePicker();
         descriptionField.setPrefRowCount(3);
         descriptionField.setWrapText(true);
 
@@ -85,10 +86,11 @@ public class InspectionCardController extends WindowController {
         inspectionJournalController = journal;
         grid = new GridPane();
 
-        Label carLabel = new Label("Транспортний засіб");
+        Label carLabel = new Label("Авто");
         Label priceLabel = new Label("Ціна");
         Label descriptionLabel = new Label("Опис");
-        Label workTypeLabel = new Label("Тип роботи");
+        Label workTypeLabel = new Label("Послуга");
+        Label dateLabel = new Label("Дата");
 
 
 
@@ -106,7 +108,8 @@ public class InspectionCardController extends WindowController {
                 carLabel, carField,
                 priceLabel, priceField,
                 workTypeLabel, workTypeField,
-                descriptionLabel, descriptionField
+                descriptionLabel, descriptionField,
+                dateLabel, datePicker
         );
 
         javafx.scene.control.Button saveButton = new javafx.scene.control.Button("Зберегти");
@@ -140,7 +143,8 @@ public class InspectionCardController extends WindowController {
                                 selectedCarId,
                                 workTypeField.getValue(),
                                 Double.parseDouble(priceField.getText().replace(",", ".")),
-                                descriptionField.getText());
+                                descriptionField.getText(),
+                                datePicker.getValue());
                         if(isEditing){
                             inspection.setId(id);
                             inspectionUtil.editInspection(inspection);
@@ -159,7 +163,7 @@ public class InspectionCardController extends WindowController {
     }
 
     private boolean checkInput() {
-        return (!isDouble(priceField.getText()) || workTypeField.getValue() == null || carField.getValue() == null);
+        return (!isDouble(priceField.getText()) || workTypeField.getValue() == null || carField.getValue() == null || datePicker.getValue() == null);
     }
 
     private void addSelectedCarToMap(int carId) {
