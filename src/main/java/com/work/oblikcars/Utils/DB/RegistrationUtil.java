@@ -1,5 +1,6 @@
 package com.work.oblikcars.Utils.DB;
 
+import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._Registration;
 
 import java.sql.*;
@@ -17,6 +18,41 @@ public class RegistrationUtil {
             instance = new RegistrationUtil();
         }
         return instance;
+    }
+
+    public _Registration getFirstRegistrationByCarId(int carId) {
+        String sql = """
+        SELECT id,
+               carId,
+               price,
+               registrationdate
+          FROM registrations
+         WHERE carId = ?
+      ORDER BY registrationdate ASC
+         LIMIT 1
+        """;
+
+        try (Connection conn = connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, carId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new _Registration(
+                            rs.getInt("id"),
+                            rs.getInt("carId"),
+                            rs.getDouble("price"),
+                            rs.getDate("registrationdate").toLocalDate()
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error fetching first registration for carId " + carId + ": " + e.getMessage());
+        }
+
+        return null;
     }
 
     public List<_Registration> getRegistrationsByCarsDates(LocalDate startDate,
@@ -185,5 +221,39 @@ public class RegistrationUtil {
     private Connection connect() {
         return DBUtil.getInstance().Connect();
     }
+
+    public void syncFirstRegistrationWithCars() {
+        CarUtil carUtil = CarUtil.getInstance();
+        List<_Car> cars = carUtil.getAllCars();
+
+        for (_Car car : cars) {
+            _Registration existing = getFirstRegistrationByCarId(car.getId());
+
+            LocalDate firstDate = car.getFirstRegistrationDate();
+            Double price = car.getPriceOfFirstRegistration();
+
+            // якщо дата чи ціна не задані — пропускаємо
+            if (firstDate == null || price == null) {
+                continue;
+            }
+
+            if (existing != null) {
+                // оновлюємо існуючу першу реєстрацію
+                existing.setRegistrationDate(firstDate);
+                existing.setPrice(price);
+                editRegistration(existing);
+            } else {
+                // створюємо нову реєстрацію
+                _Registration newReg = new _Registration(
+                        0,
+                        car.getId(),
+                        price,
+                        firstDate
+                );
+                addRegistration(newReg);
+            }
+        }
+    }
+
 }
 

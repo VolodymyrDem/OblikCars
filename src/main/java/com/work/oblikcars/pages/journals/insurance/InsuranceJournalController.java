@@ -126,6 +126,7 @@ public class InsuranceJournalController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(insuranceTable, insurances, pagination);
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
 

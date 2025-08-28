@@ -4,6 +4,7 @@ import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.DB.CarDisposalUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.DBUtil;
+import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._CarDisposal;
@@ -26,6 +27,7 @@ import javafx.scene.layout.VBox;
 import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CarDisposalRegister extends WindowController {
@@ -67,7 +69,13 @@ public class CarDisposalRegister extends WindowController {
         Button updateButton = new Button();
         updateButton.getStyleClass().add("grey-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
-
+        Button openFolderButton = new Button("Відкрити папку");
+        openFolderButton.setGraphic(IconsUtil.getFolderIcon());
+        openFolderButton.getStyleClass().add("grey-button");
+        openFolderButton.setOnAction(e -> {
+            DocumentsUtil.openFolder(3);
+        });
+        openFolderButton.getStyleClass().add("uniform-button");
         filterButton.setOnAction(event -> {
             updateValues();
         });
@@ -82,6 +90,23 @@ public class CarDisposalRegister extends WindowController {
                     this::updateDates
             ).openWindow();
         });
+
+        saveButton.setOnAction(
+                event -> {
+                    DocumentsUtil util = DocumentsUtil.getInstance();
+                    DocumentsUtil.initializeDirectories();
+
+                    String fileName = "Реєстр вибуття авто " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
+
+                    DocumentsUtil.exportTableViewToExcel(
+                            carDisposalTable,
+                            new ArrayList<>(carDisposals), // усі рядки
+                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                            3,
+                            fileName
+                    );
+                }
+        );
 
         TableColumn<_CarDisposal, String> carCol = new TableColumn<>("Авто");
         carCol.setCellValueFactory(cellData -> {
@@ -107,8 +132,9 @@ public class CarDisposalRegister extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(carDisposalTable, carDisposals, pagination);
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, filterButton, saveButton);
+        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, filterButton, saveButton, openFolderButton);
 
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 

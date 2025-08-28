@@ -1,6 +1,7 @@
 package com.work.oblikcars.pages.registers.insurance;
 
 import com.work.oblikcars.Utils.DB.InsuranceUtil;
+import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Insurance;
 import com.work.oblikcars.model._List;
@@ -20,6 +21,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +40,7 @@ public class InsuranceRegisterController extends WindowController {
     }
 
     public void openWindow() {
-        String windowTitle = "реєстр: страхування";
+        String windowTitle = "Реєстр: страхування";
         mainPage = MainPage.getInstance();
         if(mainPage.checkOpenWindow(windowTitle))return;
 
@@ -95,12 +97,37 @@ public class InsuranceRegisterController extends WindowController {
                     this::updateDates
             ).openWindow();
         });
+        Button openFolderButton = new Button("Відкрити папку");
+        openFolderButton.setGraphic(IconsUtil.getFolderIcon());
+        openFolderButton.getStyleClass().add("grey-button");
+        openFolderButton.setOnAction(e -> {
+            DocumentsUtil.openFolder(8);
+        });
+        openFolderButton.getStyleClass().add("uniform-button");
+
+        saveButton.setOnAction(
+                event -> {
+                    DocumentsUtil util = DocumentsUtil.getInstance();
+                    DocumentsUtil.initializeDirectories();
+
+                    String fileName = "Реєстр страхування " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
+
+                    DocumentsUtil.exportTableViewToExcel(
+                            insuranceTable,
+                            new ArrayList<>(insurances), // усі рядки
+                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                            8,
+                            fileName
+                    );
+                }
+        );
 
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(insuranceTable, insurances, pagination);
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, filterButton, saveButton);
+        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, filterButton, saveButton, openFolderButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
         insuranceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);

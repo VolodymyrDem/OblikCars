@@ -4,6 +4,7 @@ import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.DB.CarDepreciationUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.DBUtil;
+import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._CarDepreciation;
@@ -27,6 +28,7 @@ import javafx.scene.layout.VBox;
 import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -79,7 +81,13 @@ public class CarDepreciationRegisterController extends WindowController {
         toggleCarSelectionBtn.getStyleClass().add("uniform-button");
         filterButton.getStyleClass().add("uniform-button");
         saveButton.getStyleClass().add("uniform-button");
-
+        Button openFolderButton = new Button("Відкрити папку");
+        openFolderButton.setGraphic(IconsUtil.getFolderIcon());
+        openFolderButton.getStyleClass().add("grey-button");
+        openFolderButton.setOnAction(e -> {
+            DocumentsUtil.openFolder(2);
+        });
+        openFolderButton.getStyleClass().add("uniform-button");
         Button updateButton = new Button();
         updateButton.getStyleClass().add("grey-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
@@ -91,6 +99,23 @@ public class CarDepreciationRegisterController extends WindowController {
         updateButton.setOnAction(event -> {
             updateValues();
         });
+
+        saveButton.setOnAction(
+                event -> {
+                    DocumentsUtil util = DocumentsUtil.getInstance();
+                    DocumentsUtil.initializeDirectories();
+
+                    String fileName = "Реєстр справедлива вартість авто " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
+
+                    DocumentsUtil.exportTableViewToExcel(
+                            carDepreciationTable,
+                            new ArrayList<>(depreciations), // усі рядки
+                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                            2,
+                            fileName
+                    );
+                }
+        );
 
         settingsButton.setOnAction(e-> {
             new PeriodController(
@@ -132,8 +157,9 @@ public class CarDepreciationRegisterController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(carDepreciationTable, depreciations, pagination);
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton);
+        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton, openFolderButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
         carDepreciationTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);

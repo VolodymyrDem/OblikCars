@@ -180,6 +180,7 @@ public class ListJournalController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(listsTable, lists, pagination);
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton, closeListButton);
 

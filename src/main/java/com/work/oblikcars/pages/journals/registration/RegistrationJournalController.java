@@ -69,10 +69,15 @@ public class RegistrationJournalController extends WindowController {
         updateButton.getStyleClass().add("grey-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
 
+        Button syncButton = new Button("Синхронізація першої реєстрації");
+        syncButton.getStyleClass().add("grey-button");
+        syncButton.setGraphic(IconsUtil.getUpdateIcon());
+
         addButton.getStyleClass().add("uniform-button");
         editButton.getStyleClass().add("uniform-button");
         DeleteButton.getStyleClass().add("uniform-button");
         updateButton.getStyleClass().add("uniform-button");
+        syncButton.getStyleClass().add("uniform-button");
 
         TableColumn<_Registration, String> carCol = new TableColumn<>("Авто");
         carCol.setCellValueFactory(cellData -> {
@@ -102,7 +107,7 @@ public class RegistrationJournalController extends WindowController {
             _Registration selectedReg = registrationsTable.getSelectionModel().getSelectedItem();
             if (selectedReg != null) {
                 RegistrationCardController controller = new RegistrationCardController();
-                controller.openWindow(this, selectedReg);
+                controller.openWindow(this, selectedReg, false);
             }
         });
 
@@ -110,9 +115,13 @@ public class RegistrationJournalController extends WindowController {
             updateValues();
         });
 
+        syncButton.setOnAction(e->{
+            registrationUtil.syncFirstRegistrationWithCars();
+        });
+
         addButton.setOnAction(e -> {
             RegistrationCardController controller = new RegistrationCardController();
-            controller.openWindow(this, null);
+            controller.openWindow(this, null, false);
         });
 
         DeleteButton.setOnAction(e->{
@@ -131,11 +140,12 @@ public class RegistrationJournalController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(registrationsTable, registrations, pagination);
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
 
         if(DBUtil.getInstance().getUsername().equals("root")){
-            buttonBox.getChildren().add(DeleteButton);
+            buttonBox.getChildren().addAll(DeleteButton, syncButton);
         }
 
         buttonBox.setAlignment(Pos.CENTER_LEFT);

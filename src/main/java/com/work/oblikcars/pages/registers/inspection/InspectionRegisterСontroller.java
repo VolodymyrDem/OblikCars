@@ -2,6 +2,7 @@ package com.work.oblikcars.pages.registers.inspection;
 
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.InspectionUtil;
+import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model.WorkType;
 import com.work.oblikcars.model._Car;
@@ -24,6 +25,7 @@ import javafx.scene.layout.VBox;
 import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -75,7 +77,13 @@ public class InspectionRegisterСontroller extends WindowController {
         toggleCarSelectionBtn.getStyleClass().add("uniform-button");
         filterButton.getStyleClass().add("uniform-button");
         saveButton.getStyleClass().add("uniform-button");
-
+        Button openFolderButton = new Button("Відкрити папку");
+        openFolderButton.setGraphic(IconsUtil.getFolderIcon());
+        openFolderButton.getStyleClass().add("grey-button");
+        openFolderButton.setOnAction(e -> {
+            DocumentsUtil.openFolder(4);
+        });
+        openFolderButton.getStyleClass().add("uniform-button");
         Button updateButton = new Button();
         updateButton.getStyleClass().add("grey-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
@@ -94,6 +102,24 @@ public class InspectionRegisterСontroller extends WindowController {
                     this::updateDates
             ).openWindow();
         });
+
+        saveButton.setOnAction(
+                event -> {
+                    DocumentsUtil util = DocumentsUtil.getInstance();
+                    DocumentsUtil.initializeDirectories();
+
+                    String fileName = "Реєстр сервіси " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
+
+                    DocumentsUtil.exportTableViewToExcel(
+                            inspectionsTable,
+                            new ArrayList<>(inspections), // усі рядки
+                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                            4,
+                            fileName
+                    );
+                }
+        );
+
 
         toggleCarSelectionBtn.setOnAction(e -> {
             var checkModel = carField.getCheckModel();
@@ -131,11 +157,12 @@ public class InspectionRegisterСontroller extends WindowController {
 
         inspectionsTable.getColumns().addAll(carCol, priceCol, workTypeCol, descriptionCol, dateCol);
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton);
+        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton, openFolderButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(inspectionsTable, inspections, pagination);
 
         inspectionsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         VBox.setVgrow(inspectionsTable, Priority.ALWAYS);
@@ -210,12 +237,12 @@ public class InspectionRegisterСontroller extends WindowController {
 
                     // Викликаємо фільтрацію за датами і всіма машинами:
                     newInspections = inspectionUtil.getInspectionsByCarsDates(start, end, allCarIds).stream()
-                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
+                            .sorted((c1, c2) -> c1.getDate().compareTo(c2.getDate()))
                             .toList();
                 } else {
                     // Якщо вибрані конкретні авто — фільтруємо за ними
                     newInspections = inspectionUtil.getInspectionsByCarsDates(start, end, selectedCarIds).stream()
-                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
+                            .sorted((c1, c2) -> c1.getDate().compareTo(c2.getDate()))
                             .toList();
                 }
 

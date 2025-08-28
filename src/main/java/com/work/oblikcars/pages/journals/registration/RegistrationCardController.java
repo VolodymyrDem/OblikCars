@@ -32,10 +32,17 @@ public class RegistrationCardController extends WindowController {
     private String windowTitle;
     private RegistrationJournalController registrationJournalController;
     private int id;
+    private boolean isEditing;
+    private boolean isNew;
 
-    public void openWindow(RegistrationJournalController journal, _Registration selectedRegistration) {
+    public void openWindow(RegistrationJournalController journal, _Registration selectedRegistration, boolean isNewCar) {
         windowTitle = (selectedRegistration == null)?"Журнал: продовження реєстрації - додати реєстрацію" : "Журнал: продовження реєстрації - редагувати реєстрацію";
-
+        isEditing = (selectedRegistration != null);
+        if(isNewCar){
+            windowTitle = "Створення первинної реєстрації для авто";
+            isEditing = false;
+        }
+        isNew = isNewCar;
         mainPage = MainPage.getInstance();
 
         if(mainPage.checkOpenWindow(windowTitle))return;
@@ -82,7 +89,7 @@ public class RegistrationCardController extends WindowController {
         javafx.scene.control.Button saveButton = new javafx.scene.control.Button("Зберегти");
 
         saveButton.setOnAction(e ->{
-            handleAction(selectedRegistration != null);
+            handleAction();
         });
 
         VBox vbox = new VBox();
@@ -92,7 +99,7 @@ public class RegistrationCardController extends WindowController {
 
     }
 
-    private void handleAction(boolean isEditing){
+    private void handleAction(){
         if (checkInput()) {
             AlertsUtil.ErrorAlert("Помилка вводу", "Введіть усі необхідні дані").showAndWait();
         } else {
@@ -112,13 +119,22 @@ public class RegistrationCardController extends WindowController {
                                 datePicker.getValue());
                         if(isEditing){
                             registration.setId(id);
+                            if(!isNew){
+                                _Registration firstReg = registrationUtil.getFirstRegistrationByCarId(selectedCarId);
+                                if(registration.getId() == firstReg.getId()){
+                                    _Car tempCar = carUtil.getCarById(selectedCarId);
+                                    tempCar.setFirstRegistrationDate(registration.getRegistrationDate());
+                                    tempCar.setPriceOfFirstRegistration(registration.getPrice());
+                                    carUtil.editCar(tempCar);
+                                }
+                            }
                             registrationUtil.editRegistration(registration);
                         }
                         else
                             registrationUtil.addRegistration(registration);
 
                         mainPage.closeInternalWindow(windowTitle);
-                        registrationJournalController.updateValues();
+                        if(registrationJournalController != null )registrationJournalController.updateValues();
                     }
                 });
             } catch (NumberFormatException ex) {

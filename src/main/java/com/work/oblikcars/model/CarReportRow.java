@@ -3,6 +3,8 @@ package com.work.oblikcars.model;
 import javafx.beans.property.*;
 
 import java.time.LocalDate;
+import java.time.format.TextStyle;
+import java.util.Locale;
 
 public class CarReportRow {
     private final IntegerProperty index;
@@ -17,10 +19,12 @@ public class CarReportRow {
     private final DoubleProperty transportPrice;
     private final DoubleProperty totalPrice;
     private final ObjectProperty<LocalDate> rentDate;
+    private final ObjectProperty<LocalDate> purchaseDate;
     private final DoubleProperty Odometr;
+    private final StringProperty formattedRentDate;
 
     public CarReportRow(int idx, String model, String color, String number,
-                        int year, double price, String rented, double mileage, double firstReg, double transportPrice, LocalDate rentDate, double Odometr) {
+                        int year, double price, String rented, double mileage, double firstReg, double transportPrice, LocalDate rentDate, LocalDate purchaseDate, double Odometr) {
         this.index = new SimpleIntegerProperty(idx);
         this.model = new SimpleStringProperty(model);
         this.color = new SimpleStringProperty(color);
@@ -31,9 +35,16 @@ public class CarReportRow {
         this.mileage = new SimpleDoubleProperty(mileage);
         this.firstReg = new SimpleDoubleProperty(firstReg);
         this.transportPrice = new SimpleDoubleProperty(transportPrice);
+        this.purchaseDate = new SimpleObjectProperty<>(purchaseDate);
         this.totalPrice = new SimpleDoubleProperty(firstReg+transportPrice+price);
         this.rentDate = new SimpleObjectProperty<>(rentDate);
         this.Odometr = new SimpleDoubleProperty(Odometr);
+        this.formattedRentDate = new SimpleStringProperty(
+                rentDate != null
+                        ? rentDate.getMonth().getDisplayName(TextStyle.FULL_STANDALONE, new Locale("uk")) + " " + rentDate.getYear()
+                        : ""
+        );
+
     }
 
     // getters needed for PropertyValueFactory:
@@ -51,6 +62,20 @@ public class CarReportRow {
 
     public LocalDate getRentDate() { return rentDate.get(); }
     public void setRentDate(LocalDate d) { rentDate.set(d); }
+
+    public LocalDate getPurchaseDate() { return purchaseDate.get(); }
+    public void setPurchaseDate(LocalDate d) { purchaseDate.set(d); }
+
     public ObjectProperty<LocalDate> rentDateProperty() { return rentDate; }
     public double getOdometr() { return Odometr.get(); }
+    public String getFormattedRentDate() {
+        return formattedRentDate.get();
+    }
+
+
+
+    public StringProperty formattedRentDateProperty() {
+        return formattedRentDate;
+    }
+
 }

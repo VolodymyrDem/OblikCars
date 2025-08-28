@@ -20,6 +20,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.application.Platform;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class CarsHandbookController extends WindowController {
@@ -75,7 +76,7 @@ public class CarsHandbookController extends WindowController {
         TableColumn<_Car, String> modelCol = new TableColumn<>("Модель");
         modelCol.setCellValueFactory(new PropertyValueFactory<>("model"));
 
-        TableColumn<_Car, String> yearCol = new TableColumn<>("Рік");
+        TableColumn<_Car, String> yearCol = new TableColumn<>("Рік випуску");
         yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
 
         TableColumn<_Car, String> colorCol = new TableColumn<>("Колір");
@@ -84,6 +85,9 @@ public class CarsHandbookController extends WindowController {
         TableColumn<_Car, String> descriptionCol = new TableColumn<>("Опис");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
+        TableColumn<_Car, LocalDate> purchaseDate = new TableColumn<>("Дата купівлі");
+        purchaseDate.setCellValueFactory(new PropertyValueFactory<>("purchaseDate"));
+
 
         TableColumn<_Car, String> fuelCol = new TableColumn<>("Тип палива");
         fuelCol.setCellValueFactory(new PropertyValueFactory<>("fuel"));
@@ -91,13 +95,13 @@ public class CarsHandbookController extends WindowController {
         TableColumn<_Car, String> engineVolumeCol = new TableColumn<>("Об'єм двигуна");
         engineVolumeCol.setCellValueFactory(new PropertyValueFactory<>("engineVolume"));
 
-        TableColumn<_Car, String> rentDateCol = new TableColumn<>("Дата передачі в ренту");
+        TableColumn<_Car, LocalDate> rentDateCol = new TableColumn<>("Дата передачі в ренту");
         rentDateCol.setCellValueFactory(new PropertyValueFactory<>("rentDate"));
 
         TableColumn<_Car, String> mileageStartCol = new TableColumn<>("Початковий пробіг");
         mileageStartCol.setCellValueFactory(new PropertyValueFactory<>("mileageStart"));
 
-        TableColumn<_Car, String> firstRegistrationDateCol = new TableColumn<>("Дата першої реєстрації");
+        TableColumn<_Car, LocalDate> firstRegistrationDateCol = new TableColumn<>("Дата першої реєстрації");
         firstRegistrationDateCol.setCellValueFactory(new PropertyValueFactory<>("firstRegistrationDate"));
 
         TableColumn<_Car, String> priceOfFirstRegistrationCol = new TableColumn<>("Вартість першої реєстрації");
@@ -121,7 +125,7 @@ public class CarsHandbookController extends WindowController {
         });
 
 
-        carsTable.getColumns().addAll(vinCol, numberCol,colorCol, modelCol,yearCol, fuelCol, engineVolumeCol, rentDateCol,
+        carsTable.getColumns().addAll(vinCol, numberCol, colorCol, modelCol,yearCol, fuelCol, engineVolumeCol,purchaseDate, rentDateCol,
                 mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol, transportPriceCol,descriptionCol, removeDateCol, actualCol);
 
         carsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
@@ -163,6 +167,8 @@ public class CarsHandbookController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(carsTable, cars, pagination);
+
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton, deleteButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);

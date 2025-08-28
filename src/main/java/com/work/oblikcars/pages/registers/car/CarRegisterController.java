@@ -1,5 +1,6 @@
 package com.work.oblikcars.pages.registers.car;
 import com.work.oblikcars.Utils.DB.CarUtil;
+import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model.CarReportRow;
 import com.work.oblikcars.model._List;
@@ -20,10 +21,7 @@ import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
 import java.time.format.TextStyle;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Locale;
+import java.util.*;
 
 public class CarRegisterController extends WindowController {
     private ObservableList<CarReportRow> rows;
@@ -78,7 +76,7 @@ public class CarRegisterController extends WindowController {
         TableColumn<CarReportRow, String> numberCol = new TableColumn<>("Номер");
         numberCol.setCellValueFactory(new PropertyValueFactory<>("number"));
 
-        TableColumn<CarReportRow, Number> yearCol = new TableColumn<>("Рік");
+        TableColumn<CarReportRow, Number> yearCol = new TableColumn<>("Рік випуску");
         yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
 
         TableColumn<CarReportRow, Number> priceCol = new TableColumn<>("Вартість купівлі");
@@ -86,6 +84,10 @@ public class CarRegisterController extends WindowController {
 
         TableColumn<CarReportRow, String> rentedCol = new TableColumn<>("Переданий в рент");
         rentedCol.setCellValueFactory(new PropertyValueFactory<>("rented"));
+
+        TableColumn<CarReportRow, LocalDate> purchaseDateCol = new TableColumn<>("Дата купівлі");
+        purchaseDateCol.setCellValueFactory(new PropertyValueFactory<>("purchaseDate"));
+
 
         TableColumn<CarReportRow, LocalDate> rentCol = new TableColumn<>("Місяць та рік передачі в рент");
         rentCol.setCellValueFactory(
@@ -127,12 +129,16 @@ public class CarRegisterController extends WindowController {
         rentCol.visibleProperty().bind(showRentDateCheck.selectedProperty());
 
         carReportTable.getColumns().addAll(
-                idxCol, modelCol, colorCol, numberCol,
+                idxCol, modelCol, colorCol, numberCol, purchaseDateCol,
                 yearCol, rentedCol, rentCol, mileageCol, odometrCol, priceCol, firstRegcol, transportPriceCol, totalPriceCol
         );
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+
+        enableGlobalSorting(carReportTable, rows, pagination);
+
+
 
         HBox buttonBox = new HBox(10,updateButton, dateLabel, reportDatePicker,showRentDateCheck, filterButton, saveButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
@@ -178,6 +184,23 @@ public class CarRegisterController extends WindowController {
             }
         });
 
+        saveButton.setOnAction(
+                event -> {
+                    DocumentsUtil util = DocumentsUtil.getInstance();
+                    DocumentsUtil.initializeDirectories();
+
+                    String fileName = "Реєстр авто " + reportDatePicker.getValue().format(dateFormatterFile);
+
+                    DocumentsUtil.exportTableViewToExcel(
+                            carReportTable,
+                            new ArrayList<>(rows), // усі рядки
+                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                            4,
+                            fileName
+                    );
+                }
+        );
+
         table.getChildren().addAll(buttonBox,tableContainer, pagination);
         mainPage.openInternalWindow(table, windowTitle, true);
 
@@ -189,10 +212,7 @@ public class CarRegisterController extends WindowController {
             @Override
             protected Void call() {
 
-                List<CarReportRow> newReports;
-
-                newReports = carUtil.getCarReportRows(reportDatePicker.getValue());
-
+                List<CarReportRow> newReports = carUtil.getCarReportRows(reportDatePicker.getValue());
 
                 Platform.runLater(() -> {
                     rows.setAll(newReports);

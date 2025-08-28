@@ -42,6 +42,9 @@ public class CarUtil {
                 rs.getBoolean("valid"),
                 rs.getDouble("transportPrice")
         );
+        if(rs.getDate("purchaseDate") != null) {
+            car.setPurchaseDate(rs.getDate("purchaseDate").toLocalDate());
+        }
         if(!rs.getBoolean("valid")) {
             car.setRemoveDate(rs.getDate("removeDate").toLocalDate()
             );
@@ -214,9 +217,44 @@ public class CarUtil {
         return 0.0;
     }
 
+    public double getDateMileage(int carId, LocalDate date) {
+        String sql = """
+        SELECT 
+            MAX(endmileage) AS max_end_mileage
+        FROM lists
+        WHERE 
+            carid = ? 
+            AND done = TRUE 
+            AND enddate <= ?
+    """;
+
+        try (Connection connection = Connect();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            stmt.setInt(1, carId);
+            stmt.setDate(2, java.sql.Date.valueOf(date));  // фільтр за датою
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    double maxEndMileage = rs.getDouble("max_end_mileage");
+                    if (!rs.wasNull()) {
+                        return maxEndMileage;
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Помилка при отриманні пробігу: " + e.getMessage());
+        }
+
+        // якщо жодного закритого пробігу до цієї дати не знайдено — повертаємо початковий
+        _Car car = getCarById(carId);
+        return (car != null) ? car.getMileageStart() : 0.0;
+    }
+
     public void addCar(_Car car) {
-        String sql = car.isValid()?"INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, transportPrice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)":
-                                   "INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, removeDate, transportPrice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = car.isValid()?"INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, transportPrice, purchaseDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)":
+                                   "INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, removeDate, transportPrice, purchaseDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, car.getVin());
@@ -234,9 +272,11 @@ public class CarUtil {
             ps.setDouble(13, car.getPrice());
             ps.setBoolean(14, car.isValid());
             ps.setDouble(15, car.getTransportPrice());
+            ps.setDate(16, Date.valueOf(car.getPurchaseDate()));
             if(!car.isValid()) {
                 ps.setDate(15, Date.valueOf(car.getRemoveDate()));
                 ps.setDouble(16, car.getTransportPrice());
+                ps.setDate(17, Date.valueOf(car.getPurchaseDate()));
             }
 
 
@@ -246,7 +286,7 @@ public class CarUtil {
     }
 
     public void editCar(_Car car) {
-        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ?, removeDate = ?, transportPrice = ? WHERE id = ?";
+        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ?, removeDate = ?, transportPrice = ?, purchaseDate = ? WHERE id = ?";
         try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, car.getVin());
             ps.setString(2, car.getNumber());
@@ -264,7 +304,8 @@ public class CarUtil {
             ps.setBoolean(14, car.isValid());
             ps.setDate(15, car.isValid()?null:Date.valueOf(car.getRemoveDate()));
             ps.setDouble(16, car.getTransportPrice());
-            ps.setInt(17, car.getId());
+            ps.setDate(17, Date.valueOf(car.getPurchaseDate()));
+            ps.setInt(18, car.getId());
             ps.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
@@ -365,78 +406,85 @@ public class CarUtil {
         }
     }
 
+    //todo: fix the car report row to work with purchasedate
+
     public List<CarReportRow> getCarReportRows(LocalDate reportDate) {
+
         List<CarReportRow> rows = new ArrayList<>();
         String sql = """
-        SELECT
-          c.id,
-          c.model,
-          c.color,
-          c.number,
-          c.year,
-          c.price,
-          c.rentdate,
-          c.mileageStart,
-          c.priceOfFirstRegistration,
-          c.transportPrice,
-          c.rentdate
-        FROM cars c
-        WHERE c.rentdate <= ?
-          AND (c.removeDate IS NULL OR c.removeDate >= ?)
-        ORDER BY c.id
-        """;
+        SELECT * FROM cars
+        ORDER BY cars.id
+    """;
 
-        Date dt = Date.valueOf(reportDate);
         try (Connection conn = Connect();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
-            ps.setDate(1, dt);
-            ps.setDate(2, dt);
+            int idx = 1;
+            while (rs.next()) {
+                // purchaseDate може бути NULL -> перевіряємо
+                Date purchaseSql = rs.getDate("purchaseDate");
+                LocalDate purchaseDate = (purchaseSql != null) ? purchaseSql.toLocalDate() : null;
 
-            try (ResultSet rs = ps.executeQuery()) {
-                int idx = 1;
-                while (rs.next()) {
-                    int carId         = rs.getInt("id");
-                    String model      = rs.getString("model");
-                    String color      = rs.getString("color");
-                    String number     = rs.getString("number");
-                    int year          = rs.getInt("year");
-                    double price      = rs.getDouble("price");
-                    LocalDate rentDt  = rs.getDate("rentdate").toLocalDate();
-                    double startMiles = rs.getDouble("mileageStart");
-                    int firstReg =  rs.getInt("priceOfFirstRegistration");
-                    double transportPrice = rs.getDouble("transportPrice");
-                    LocalDate rentDate = rs.getDate("rentdate").toLocalDate();
-                    // Останній зафіксований пробіг з таблиці lists
-                    double lastMiles = getCurrentMileage(carId);
-                    double rentalMiles = lastMiles - startMiles;
-                    if (rentalMiles < 0) rentalMiles = 0.0;
-
-                    // Статус "передано в рент" — rentdate ≤ reportDate
-                    boolean rented = !rentDt.isAfter(reportDate);
-
-                    rows.add(new CarReportRow(
-                            idx++,
-                            model,
-                            color,
-                            number,
-                            year,
-                            price,
-                            rented ? "Так" : "Ні",
-                            rentalMiles,
-                            firstReg,
-                            transportPrice,
-                            rentDate,
-                            lastMiles
-                    ));
+                // Якщо є purchaseDate і вона після reportDate — пропускаємо
+                if (purchaseDate == null || purchaseDate.isAfter(reportDate)) {
+                    continue;
                 }
+
+                int carId            = rs.getInt("id");
+                String model         = rs.getString("model");
+                String color         = rs.getString("color");
+                String number        = rs.getString("number");
+                int year             = rs.getInt("year");
+                double price         = rs.getDouble("price");
+                double startMiles    = rs.getDouble("mileageStart");
+
+                // ЦЕ ВАЖЛИВО: читати як Double (може бути з копійками або NULL)
+                Double firstRegD     = rs.getObject("priceOfFirstRegistration", Double.class);
+                Double transportD    = rs.getObject("transportPrice", Double.class);
+
+                // якщо CarReportRow очікує int для firstReg — округли/приведи тут:
+                // int firstReg = (firstRegD != null) ? (int)Math.round(firstRegD) : 0;
+                // але краще, щоб CarReportRow приймав double
+                double firstReg = (firstRegD != null) ? firstRegD : 0.0;
+                double transportPrice = (transportD != null) ? transportD : 0.0;
+
+                // rentdate у схемі NOT NULL, але нехай буде обережно
+                Date rentSql = rs.getDate("rentdate");
+                LocalDate rentDate = (rentSql != null) ? rentSql.toLocalDate() : null;
+
+                // Останній пробіг на дату
+                double lastMiles = getDateMileage(carId, reportDate);
+                double rentalMiles = lastMiles - startMiles;
+                if (rentalMiles < 0) rentalMiles = 0.0;
+
+                // "Передано в рент" — якщо rentDate існує і <= reportDate
+                boolean rented = (rentDate != null) && !rentDate.isAfter(reportDate);
+
+                rows.add(new CarReportRow(
+                        idx++,
+                        model,
+                        color,
+                        number,
+                        year,
+                        price,
+                        rented ? "Так" : "Ні",
+                        rentalMiles,
+                        // якщо у CarReportRow тут int — заміни параметр на (int)Math.round(firstReg)
+                        firstReg,
+                        transportPrice,
+                        rentDate,
+                        purchaseDate,
+                        lastMiles
+                ));
             }
-        } catch (SQLException e) {
+        } catch (Exception e) { // ловимо будь-які рантайм винятки, не лише SQLException
             e.printStackTrace();
         }
 
         return rows;
     }
+
 
 
     private Connection Connect() {

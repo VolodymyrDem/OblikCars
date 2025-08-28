@@ -129,6 +129,7 @@ public class CarDepreciationJournalController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(carDepreciationTable, depreciations, pagination);
 
         HBox buttonBox = new HBox(10, updateButton, addButton, editButton);
 

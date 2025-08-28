@@ -20,6 +20,7 @@ public class _Car {
     private boolean valid;
     private LocalDate removeDate;
     private double transportPrice;
+    private LocalDate purchaseDate;
 
     public _Car() {
     }
@@ -65,6 +66,14 @@ public class _Car {
         this.price = price;
         this.valid = valid;
         this.transportPrice = transportPrice;
+    }
+
+    public LocalDate getPurchaseDate() {
+        return purchaseDate;
+    }
+
+    public void setPurchaseDate(LocalDate purchaseDate) {
+        this.purchaseDate = purchaseDate;
     }
 
     public double getTransportPrice() {

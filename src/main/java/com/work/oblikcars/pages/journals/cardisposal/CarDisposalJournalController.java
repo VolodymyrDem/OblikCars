@@ -130,6 +130,7 @@ public class CarDisposalJournalController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(carDisposalTable, carDisposals, pagination);
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
 

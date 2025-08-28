@@ -1,7 +1,10 @@
 package com.work.oblikcars.pages;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.scene.control.Pagination;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -14,6 +17,7 @@ import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +27,7 @@ public abstract class WindowController {
     protected DecimalFormat df = new DecimalFormat("#.00");
 
     protected DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    protected DateTimeFormatter dateFormatterFile = DateTimeFormatter.ofPattern("MM-dd-yyyy");
 
     protected boolean isEmptyOrWhitespace(String text) {
         return text == null || text.trim().isEmpty();
@@ -79,6 +84,25 @@ public abstract class WindowController {
                     setText(df.format(value));  // тепер замість коми буде крапка
                 }
             }
+        });
+    }
+
+    protected <T> void enableGlobalSorting(
+            TableView<T> table,
+            ObservableList<T> masterData,
+            Pagination pagination
+    ) {
+        table.setSortPolicy(tv -> {
+            Comparator<T> comp = tv.getComparator();
+            if (comp != null) {
+                FXCollections.sort(masterData, comp);
+            }
+            // оновлюємо поточну сторінку
+            int page = pagination.getCurrentPageIndex();
+            int from = page * rowsPerPage;
+            int to   = Math.min(masterData.size(), from + rowsPerPage);
+            table.setItems(FXCollections.observableArrayList(masterData.subList(from, to)));
+            return true;
         });
     }
 }

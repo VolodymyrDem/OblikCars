@@ -140,6 +140,7 @@ public class InspectionJournalController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(inspectionsTable, inspections, pagination);
 
         HBox buttonBox = new HBox(10, updateButton, addButton, editButton);
 
@@ -193,7 +194,6 @@ public class InspectionJournalController extends WindowController {
         table.getChildren().addAll(buttonBox, tableContainer, pagination);
 
         mainPage.openInternalWindow(table, windowTitle, true);
-
     }
 
     public void updateValues() {
@@ -202,8 +202,9 @@ public class InspectionJournalController extends WindowController {
             protected Void call() {
                 List<_Inspection> newInspections;
                 newInspections = inspectionUtil.getAllInspections().stream()
-                        .sorted((c1, c2) -> Integer.compare(c1.getId(), c2.getId()))
+                        .sorted((c1, c2) -> c1.getDate().compareTo(c2.getDate()))
                         .toList();
+
 
 
                 Platform.runLater(() -> {

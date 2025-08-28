@@ -2,10 +2,13 @@ package com.work.oblikcars.pages.handbooks.cars;
 
 import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
+import com.work.oblikcars.Utils.DB.RegistrationUtil;
 import com.work.oblikcars.Utils.PagesUtil;
 import com.work.oblikcars.model._Car;
+import com.work.oblikcars.model._Registration;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
+import com.work.oblikcars.pages.journals.registration.RegistrationCardController;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -32,8 +35,10 @@ public class CarCardController extends WindowController {
     private TextField yearField;
     private TextField colorField;
     private DatePicker removeDatePicker;
+    private DatePicker purchaseDatePicker;
     private TextArea descriptionField;
     private CarsHandbookController carsHandbookController;
+    private RegistrationUtil registrationUtil;
     private int id;
 
     public CarCardController(){}
@@ -46,6 +51,7 @@ public class CarCardController extends WindowController {
 
         carUtil = CarUtil.getInstance();
         carsHandbookController = handbook;
+        registrationUtil =  RegistrationUtil.getInstance();
         grid = new GridPane();
 
         Label vinLabel = new Label("Він код");
@@ -63,6 +69,7 @@ public class CarCardController extends WindowController {
         Label descriptionLabel = new Label("Опис");
         Label removeDateLabel = new Label("Дата зняття з експлуатації");
         Label transportPriceLabel = new Label("Вартість транспортування");
+        Label purchaseDateLabel = new Label("Дата купівлі");
 
         validCheckBox = new CheckBox("Валідність");
         yearField = new TextField();
@@ -81,7 +88,8 @@ public class CarCardController extends WindowController {
         priceField = new TextField();
         transportPriceField = new TextField();
         removeDatePicker = new DatePicker();
-        removeDatePicker.setDisable(true);
+        purchaseDatePicker = new DatePicker();
+
         if(selectedCar != null){
             yearField.setText(String.valueOf(selectedCar.getYear()));
             colorField.setText(selectedCar.getColor());
@@ -99,16 +107,21 @@ public class CarCardController extends WindowController {
             priceField.setText(String.valueOf(selectedCar.getPrice()));
             transportPriceField.setText(String.valueOf(selectedCar.getTransportPrice()));
             validCheckBox.setSelected(selectedCar.isValid());
+            purchaseDatePicker.setValue(selectedCar.getPurchaseDate());
             if(selectedCar.getRemoveDate() != null){
                 removeDatePicker.setValue(selectedCar.getRemoveDate());
             }
         }
         else {
             validCheckBox.setSelected(true);
-            validCheckBox.setDisable(true);
         }
-        removeDatePicker.setDisable(true);
+
         validCheckBox.setDisable(true);
+
+        removeDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> {
+            validCheckBox.setSelected(newVal == null);
+        });
+
 
         grid = PagesUtil.buildGridDouble(
                 vinLabel, vinField,
@@ -119,6 +132,7 @@ public class CarCardController extends WindowController {
                 fuelLabel, fuelField,
                 engineVolumeLabel, engineVolumeField,
                 rentDateLabel, rentDatePicker,
+                purchaseDateLabel, purchaseDatePicker,
                 mileageStartLabel, mileageStartField,
                 firstRegistrationDateLabel, firstRegistrationDatePicker,
                 priceOfFirstRegistrationLabel, priceOfFirstRegistrationField,
@@ -150,12 +164,41 @@ public class CarCardController extends WindowController {
                 AlertsUtil.ConfirmAlert("Підтвердіть операцію", isEditing?"Редагувати транспортний засіб" : "Додати транспортний засіб").showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
                         _Car car = createCar();
+                        RegistrationCardController controller = new RegistrationCardController();
                         if(isEditing){
                             car.setId(id);
                             carUtil.editCar(car);
+                            _Registration registration = registrationUtil.getFirstRegistrationByCarId(car.getId());
+                            if(registration != null){
+
+                                boolean dateChanged = !registration.getRegistrationDate()
+                                        .equals(car.getFirstRegistrationDate());
+                                boolean priceChanged = Double.compare(
+                                        registration.getPrice(),
+                                        car.getPriceOfFirstRegistration()
+                                ) != 0;
+
+                                if (dateChanged || priceChanged) {
+                                    registration.setRegistrationDate(car.getFirstRegistrationDate());
+                                    registration.setPrice(car.getPriceOfFirstRegistration());
+                                    controller.openWindow(null, registration, false);
+                                }
+                            } else {
+                                registration = new _Registration();
+                                registration.setCarId(car.getId());
+                                registration.setRegistrationDate(car.getFirstRegistrationDate());
+                                registration.setPrice(car.getPriceOfFirstRegistration());
+                                controller.openWindow(null, registration, true);
+                            }
                         }
-                        else
+                        else {
                             carUtil.addCar(car);
+                            _Registration registration = new _Registration();
+                            registration.setPrice(car.getPriceOfFirstRegistration());
+                            registration.setRegistrationDate(car.getFirstRegistrationDate());
+                            registration.setCarId(carUtil.getCarIdByNumber(car.getNumber()));
+                            controller.openWindow(null, registration, true);
+                        }
 
                         mainPage.closeInternalWindow(windowTitle);
                         carsHandbookController.updateValues();
@@ -187,6 +230,7 @@ public class CarCardController extends WindowController {
         if(!validCheckBox.isSelected()){
             car.setRemoveDate(removeDatePicker.getValue());
         }
+        car.setPurchaseDate(purchaseDatePicker.getValue());
         return car;
     }
 
@@ -205,7 +249,8 @@ public class CarCardController extends WindowController {
                 firstRegistrationDatePicker.getValue() == null ||
                 !isDouble(priceOfFirstRegistrationField.getText().replace(",", ".")) ||
                 !isDouble(priceField.getText().replace(",", ".")) ||
-                !isDouble(transportPriceField.getText().replace(",", "."));
+                !isDouble(transportPriceField.getText().replace(",", ".")) ||
+                purchaseDatePicker.getValue() == null;
     }
 
 }

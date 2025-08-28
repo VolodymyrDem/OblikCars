@@ -4,6 +4,7 @@ import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.DBUtil;
 import com.work.oblikcars.Utils.DB.ListUtil;
+import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._List;
@@ -26,6 +27,7 @@ import javafx.scene.layout.VBox;
 import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -89,6 +91,14 @@ public class ListRegisterController extends WindowController {
             updateValues();
         });
 
+        Button openFolderButton = new Button("Відкрити папку");
+        openFolderButton.setGraphic(IconsUtil.getFolderIcon());
+        openFolderButton.getStyleClass().add("grey-button");
+        openFolderButton.setOnAction(e -> {
+            DocumentsUtil.openFolder(5);
+        });
+        openFolderButton.getStyleClass().add("uniform-button");
+
         updateButton.setOnAction(event -> {
             updateValues();
         });
@@ -99,6 +109,23 @@ public class ListRegisterController extends WindowController {
                     this::updateDates
             ).openWindow();
         });
+
+        saveButton.setOnAction(
+                event -> {
+                    DocumentsUtil util = DocumentsUtil.getInstance();
+                    DocumentsUtil.initializeDirectories();
+
+                    String fileName = "Реєстр подорожні листи " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
+
+                    DocumentsUtil.exportTableViewToExcel(
+                            listsTable,
+                            new ArrayList<>(lists), // усі рядки
+                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                            5,
+                            fileName
+                    );
+                }
+        );
 
         TableColumn<_List, String> carCol = new TableColumn<>("Авто");
         carCol.setCellValueFactory(cellData -> {
@@ -141,8 +168,9 @@ public class ListRegisterController extends WindowController {
 
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(listsTable, lists, pagination);
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton);
+        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton, openFolderButton);
 
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
