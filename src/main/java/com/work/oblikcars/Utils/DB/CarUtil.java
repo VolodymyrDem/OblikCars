@@ -406,8 +406,6 @@ public class CarUtil {
         }
     }
 
-    //todo: fix the car report row to work with purchasedate
-
     public List<CarReportRow> getCarReportRows(LocalDate reportDate) {
 
         List<CarReportRow> rows = new ArrayList<>();

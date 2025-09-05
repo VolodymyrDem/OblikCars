@@ -1,6 +1,8 @@
 package com.work.oblikcars.Utils;
 
 import javafx.collections.ObservableList;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.stage.FileChooser;
@@ -9,6 +11,18 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import com.work.oblikcars.Utils.DB.CarUtil;
+import com.work.oblikcars.Utils.DB.ListUtil;
+import com.work.oblikcars.model._Car;
+import com.work.oblikcars.model._List;
+
+import java.io.FileInputStream;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import java.awt.*;
 import java.io.File;
@@ -100,6 +114,373 @@ public class DocumentsUtil {
             }
         }
     }
+
+    private enum ImportMode {
+        FUTURE_ONLY,        // як зараз: від поточного пробігу і далі
+        BACKFILL_AND_MERGE  // бекстіл: додаємо відсутню історію теж
+    }
+
+    // Невелике вікно вибору режиму
+    private static ImportMode askImportMode(Window owner) {
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION);
+        a.initOwner(owner);
+        a.setTitle("Режим імпорту");
+        a.setHeaderText("Обери режим імпорту подорожніх листів");
+        a.setContentText("""
+        • Лише від поточного пробігу — імпортуємо записи з Check-out ≥ поточного пробігу авто.
+        • Дозавантажити історію — імпортуємо всі відсутні валідні записи (навіть старіші), з антидублями.
+        """);
+
+        ButtonType futureOnly = new ButtonType("Лише від поточного");
+        ButtonType backfill   = new ButtonType("Дозавантажити історію");
+        ButtonType cancel     = ButtonType.CANCEL;
+
+        a.getButtonTypes().setAll(futureOnly, backfill, cancel);
+        Optional<ButtonType> res = a.showAndWait();
+        if (res.isPresent() && res.get() == backfill) return ImportMode.BACKFILL_AND_MERGE;
+        if (res.isPresent() && res.get() == futureOnly) return ImportMode.FUTURE_ONLY;
+        return null; // користувач скасував
+    }
+    public static int importListsFromExcel(Window parentWindow) throws Exception {
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Обрати Excel зі звітом поїздок");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel (*.xlsx)", "*.xlsx"));
+        File file = fc.showOpenDialog(parentWindow);
+        if (file == null) return 0;
+
+        // вибір режиму
+        ImportMode mode = askImportMode(parentWindow);
+        if (mode == null) return 0; // скасували
+
+        // 1) Підтягнути всі авто заздалегідь
+        CarUtil carUtil = CarUtil.getInstance();
+        List<_Car> allCars = carUtil.getAllCars();
+
+        // 2) Парс Excel
+        List<RowTrip> rows = parseExcelTrips(file);
+
+        // 3) Валідні: обидва одометри є і out > in
+        List<RowTrip> valid = rows.stream()
+                .filter(r -> r.odomIn != null && r.odomOut != null && r.odomOut > r.odomIn)
+                .toList();
+
+        // 4) Група по авто (спочатку матчимо по contains car number у полі Vehicle, потім по boxString)
+        Map<_Car, List<RowTrip>> byCar = new HashMap<>();
+        for (RowTrip r : valid) {
+            _Car car = matchCar(r, allCars);
+            if (car != null) {
+                byCar.computeIfAbsent(car, k -> new ArrayList<>()).add(r);
+            }
+        }
+
+        // 5) Готуємо вставку
+        List<_List> toInsert = new ArrayList<>();
+        ListUtil listUtil = ListUtil.getInstance();
+
+        for (Map.Entry<_Car, List<RowTrip>> e : byCar.entrySet()) {
+            _Car car = e.getKey();
+            List<RowTrip> trips = e.getValue();
+
+            // сортуємо за Check-out odometer зростально
+            trips.sort(Comparator.comparingDouble(t -> t.odomOut));
+
+            // поточний пробіг авто
+            Double currentMileage = getCurrentMileage(car, listUtil);
+
+            // існуючі листи
+            List<_List> existing = listUtil.getListsByCarId(car.getId());
+
+            // === ДІАГНОСТИКА В КОНСОЛЬ ===
+            double minOut = trips.stream().mapToDouble(t -> t.odomOut).min().orElse(-1);
+            double maxOut = trips.stream().mapToDouble(t -> t.odomOut).max().orElse(-1);
+            double maxIn = trips.stream().mapToDouble(t -> t.odomIn).max().orElse(-1);
+            double minIn = trips.stream().mapToDouble(t -> t.odomIn).min().orElse(-1);
+
+            System.out.printf(
+                    "[IMPORT] Авто: %s (ID=%d) | currentMileage=%s | minOut=%.0f | maxOut=%.0f | minIn=%.0f |maxIn=%.0f %n",
+                    car.getBoxString(),
+                    car.getId(),
+                    currentMileage,
+                    minOut,
+                    maxOut,
+                    minIn,
+                    maxIn
+            );
+
+
+            if(currentMileage<minIn) {
+                System.out.printf(
+                        "[MESSAGE] Авто: %s (ID=%d) | currentMileage=%s | minOut=%.0f | maxOut=%.0f | minIn=%.0f |maxIn=%.0f %n",
+                        car.getBoxString(),
+                        car.getId(),
+                        currentMileage,
+                        minOut,
+                        maxOut,
+                        minIn,
+                        maxIn
+                );
+            }
+
+            // =============================
+
+            int startIdx = 0;
+            boolean hasExisting = !existing.isEmpty();
+
+            if (mode == ImportMode.FUTURE_ONLY) {
+                if (hasExisting) {
+                    while (startIdx < trips.size() && trips.get(startIdx).odomOut < currentMileage) {
+                        startIdx++;
+                    }
+                } else {
+                    startIdx = 0;
+                }
+            } else {
+                startIdx = 0;
+            }
+
+            for (int i = startIdx; i < trips.size(); i++) {
+                RowTrip t = trips.get(i);
+                if (alreadyExists(existing, t)) continue;
+
+                _List list = new _List(
+                        car.getId(),
+                        t.odomIn,
+                        t.tripStart,
+                        t.odomOut,
+                        t.tripEnd,
+                        1,
+                        t.tripDays != null ? t.tripDays : 0,
+                        true,
+                        -1,
+                        "дозаповнити прибуток"
+                );
+                toInsert.add(list);
+            }
+        }
+
+
+        // 6) Масова вставка
+        if (!toInsert.isEmpty()) {
+            listUtil.bulkInsert(toInsert);
+        }
+        return toInsert.size();
+    }
+
+    private static boolean overlapsByDate(List<_List> existing, RowTrip t) {
+        if (t.tripStart == null || t.tripEnd == null) return false;
+        for (_List x : existing) {
+            if (x.getStartDate() == null || x.getEndDate() == null) continue;
+            boolean overlap = !t.tripEnd.isBefore(x.getStartDate()) && !t.tripStart.isAfter(x.getEndDate());
+            if (overlap) return true;
+        }
+        return false;
+    }
+
+
+
+
+    // --------------------- helpers ---------------------
+
+    private static class RowTrip {
+        String vehicle;
+        String vehicleName;
+        LocalDate tripStart;
+        LocalDate tripEnd;
+        Integer tripDays;
+        Double odomIn;
+        Double odomOut;
+
+        boolean isAllNull() {
+            return vehicle == null && vehicleName == null && tripStart == null && tripEnd == null
+                    && tripDays == null && odomIn == null && odomOut == null;
+        }
+    }
+
+    private static _Car matchCar(RowTrip r, List<_Car> allCars) {
+        String vehicleField = safeLower(r.vehicle);
+        String vehicleName  = safeLower(r.vehicleName);
+
+        // 1) спочатку по номеру: якщо номер авто з БД входить у текст Vehicle — це воно
+        for (_Car car : allCars) {
+            String carNum = safeLower(car.getNumber()); // поле з твоєї БД з "номером"
+            if (!carNum.isEmpty() && vehicleField.contains(carNum)) {
+                return car;
+            }
+        }
+
+        // 2) фолбек по boxString (назва відображення)
+        for (_Car car : allCars) {
+            String box = safeLower(car.getBoxString());
+            if (!box.isEmpty() && (vehicleField.contains(box) || vehicleName.contains(box))) {
+                return car;
+            }
+        }
+        return null;
+    }
+
+
+
+    private static Map<String, _Car> indexBySafeLower(List<_Car> list, java.util.function.Function<_Car, String> getter) {
+        Map<String, _Car> map = new HashMap<>();
+        for (_Car c : list) {
+            String key = safeLower(getter.apply(c));
+            if (!key.isEmpty()) map.put(key, c);
+        }
+        return map;
+    }
+
+    private static String safeLower(String s) {
+        return (s == null) ? "" : s.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean alreadyExists(List<_List> existing, RowTrip t) {
+        for (_List x : existing) {
+            if (Objects.equals(x.getStartDate(), t.tripStart)
+                    && Objects.equals(x.getEndDate(), t.tripEnd)
+                    && nearlyEq(x.getStartMileage(), t.odomIn)
+                    && nearlyEq(x.getEndMileage(), t.odomOut)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean nearlyEq(Double a, Double b) {
+        if (a == null || b == null) return false;
+        return Math.abs(a - b) < 0.001;
+    }
+
+    private static Double getCurrentMileage(_Car car, ListUtil listUtil) {
+        return CarUtil.getInstance().getCurrentMileage(car.getId());
+    }
+
+    private static List<RowTrip> parseExcelTrips(File file) throws Exception {
+        try (FileInputStream fis = new FileInputStream(file);
+             Workbook wb = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = wb.getSheetAt(0);
+            if (sheet == null) return List.of();
+
+            // знімаємо індекси колонок за заголовками
+            Row header = sheet.getRow(0);
+            Map<String, Integer> col = new HashMap<>();
+            for (int i = 0; i < header.getLastCellNum(); i++) {
+                Cell c = header.getCell(i);
+                if (c != null && c.getCellType() == CellType.STRING) {
+                    String name = c.getStringCellValue();
+                    if (name != null) col.put(name.trim(), i);
+                }
+            }
+
+            int cVehicle      = req(col, "Vehicle");
+            int cVehicleName  = req(col, "Vehicle name");
+            int cTripStart    = req(col, "Trip start");
+            int cTripEnd      = req(col, "Trip end");
+            int cTripDays     = req(col, "Trip days");
+            int cOdomIn       = req(col, "Check-in odometer");
+            int cOdomOut      = req(col, "Check-out odometer");
+
+            List<RowTrip> out = new ArrayList<>();
+            for (int r = 1; r <= sheet.getLastRowNum(); r++) { // пропускаємо шапку
+                Row row = sheet.getRow(r);
+                if (row == null) continue;
+
+                RowTrip t = new RowTrip();
+                t.vehicle     = getStr(row.getCell(cVehicle));
+                t.vehicleName = getStr(row.getCell(cVehicleName));
+                t.tripStart   = getDate(row.getCell(cTripStart));
+                t.tripEnd     = getDate(row.getCell(cTripEnd));
+                t.tripDays    = getInt(row.getCell(cTripDays));
+                t.odomIn      = getDbl(row.getCell(cOdomIn));
+                t.odomOut     = getDbl(row.getCell(cOdomOut));
+
+                if (t.isAllNull()) continue;
+                out.add(t);
+            }
+            return out;
+        }
+    }
+
+    private static int req(Map<String,Integer> col, String name) {
+        Integer i = col.get(name);
+        if (i == null) throw new IllegalStateException("Не знайдено колонку: " + name);
+        return i;
+    }
+
+    private static String getStr(Cell c) {
+        if (c == null) return null;
+        if (c.getCellType() == CellType.STRING) {
+            String s = c.getStringCellValue();
+            return (s == null || s.isBlank()) ? null : s.trim();
+        }
+        if (c.getCellType() == CellType.NUMERIC) {
+            return String.valueOf(c.getNumericCellValue());
+        }
+        return null;
+    }
+
+    private static Double getDbl(Cell c) {
+        if (c == null) return null;
+        if (c.getCellType() == CellType.NUMERIC) return c.getNumericCellValue();
+        if (c.getCellType() == CellType.STRING) {
+            try { return Double.parseDouble(c.getStringCellValue().trim()); } catch (Exception ignore) {}
+        }
+        return null;
+    }
+
+    private static Integer getInt(Cell c) {
+        Double d = getDbl(c);
+        return d == null ? null : d.intValue();
+    }
+
+    private static LocalDate getDate(Cell c) {
+        if (c == null) return null;
+
+        try {
+            // Випадок: Excel-тип "Дата"
+            if (c.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(c)) {
+                return c.getDateCellValue().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            }
+
+            // Випадок: рядок
+            if (c.getCellType() == CellType.STRING) {
+                String s = c.getStringCellValue();
+                if (s == null || s.isBlank()) return null;
+                s = s.trim();
+
+                // Список можливих форматів
+                DateTimeFormatter[] formatters = new DateTimeFormatter[]{
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a", Locale.ENGLISH), // 2024-02-20 04:00 PM
+                        DateTimeFormatter.ofPattern("dd.MM.yyyy H:mm")                     // 28.12.2024 7:30
+                };
+
+                for (DateTimeFormatter f : formatters) {
+                    try {
+                        // Парсимо як LocalDateTime і відкидаємо час
+                        LocalDateTime ldt = LocalDateTime.parse(s, f);
+                        return ldt.toLocalDate();
+                    } catch (Exception ignore) {}
+                }
+
+                // fallback: може користувач зберіг без часу → dd.MM.yyyy або yyyy-MM-dd
+                try {
+                    return LocalDate.parse(s, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+                } catch (Exception ignore) {}
+                try {
+                    return LocalDate.parse(s, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                } catch (Exception ignore) {}
+            }
+
+        } catch (Exception e) {
+            System.err.println("[WARN] Не вдалося розпарсити дату: " + c.toString());
+        }
+
+        return null;
+    }
+
+
+
+
 
 
     public static <T> void exportTableViewToExcel(

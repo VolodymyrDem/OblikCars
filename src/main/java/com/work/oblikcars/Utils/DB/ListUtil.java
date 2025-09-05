@@ -165,6 +165,117 @@ public class ListUtil {
     }
 
 
+
+    public List<_List> getListsByCarId(int carId) {
+        List<_List> lists = new ArrayList<>();
+        String sql = """
+        SELECT * FROM lists
+        WHERE carid = ?
+        """;
+
+        try (Connection connection = Connect();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, carId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    _List list;
+                    int id = resultSet.getInt("id");
+                    double startMileage = resultSet.getDouble("startmileage");
+                    LocalDate sDate = resultSet.getDate("startdate").toLocalDate();
+                    boolean done = resultSet.getBoolean("done");
+                    String description = resultSet.getString("description");
+                    if (done) {
+                        double endMileage = resultSet.getDouble("endmileage");
+                        LocalDate eDate = resultSet.getDate("enddate").toLocalDate();
+
+                        int  rents = resultSet.getInt("rents");
+                        int rentDays = resultSet.getInt("rentDays");
+
+                        double income = resultSet.getDouble("income");
+                        list = new _List(id, carId, startMileage, sDate, endMileage, eDate, rents, rentDays, done, income, description);
+                    } else {
+                        list = new _List(id, carId, startMileage, sDate, false, description);
+                    }
+
+                    lists.add(list);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error fetching lists by car and dates: " + e.getMessage());
+        }
+
+        return lists;
+    }
+
+    public void bulkInsert(List<_List> lists) throws SQLException {
+        if (lists == null || lists.isEmpty()) return;
+
+        // Поділимо на завершені (done=true) та відкриті (done=false),
+        // бо в тебе різні набори колонок для INSERT (як у addList)
+        List<_List> doneLists = new ArrayList<>();
+        List<_List> openLists = new ArrayList<>();
+        for (_List l : lists) {
+            if (l.isDone()) doneLists.add(l);
+            else openLists.add(l);
+        }
+
+        Connection connection = Connect();
+        boolean oldAuto = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+
+        try {
+            if (!doneLists.isEmpty()) {
+                String sqlDone = "INSERT INTO lists " +
+                        "(carid, startmileage, startdate, endmileage, enddate, done, income, rents, rentDays, description) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                try (PreparedStatement ps = connection.prepareStatement(sqlDone)) {
+                    for (_List l : doneLists) {
+                        ps.setInt(1, l.getCarId());
+                        ps.setDouble(2, l.getStartMileage());
+                        ps.setDate(3, Date.valueOf(l.getStartDate()));
+                        ps.setDouble(4, l.getEndMileage());
+                        ps.setDate(5, Date.valueOf(l.getEndDate()));
+                        ps.setBoolean(6, true);
+                        ps.setDouble(7, l.getIncome());
+                        ps.setInt(8, l.getRents());
+                        ps.setInt(9, l.getRentDays());
+                        ps.setString(10, l.getDescription());
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                }
+            }
+
+            if (!openLists.isEmpty()) {
+                String sqlOpen = "INSERT INTO lists " +
+                        "(carid, startmileage, startdate, done, description) " +
+                        "VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement ps = connection.prepareStatement(sqlOpen)) {
+                    for (_List l : openLists) {
+                        ps.setInt(1, l.getCarId());
+                        ps.setDouble(2, l.getStartMileage());
+                        ps.setDate(3, Date.valueOf(l.getStartDate()));
+                        ps.setBoolean(4, false);
+                        ps.setString(5, l.getDescription());
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                }
+            }
+
+            connection.commit();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(oldAuto);
+        }
+    }
+
+
     public void addList(_List list) {
         String sql = (list.isDone())?"INSERT INTO lists (carid, startmileage, startdate, endmileage, enddate, done, income, rents, rentDays, description)\n" +
                 "VALUES" +

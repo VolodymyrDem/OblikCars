@@ -18,6 +18,12 @@ public class IconsUtil {
     private static String updateIcon = "M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99";
     private static String copyIcon = "M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75";
     private static String folderIcon = "M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776";
+    private static String excelImportIconString =
+            // контур файлу
+            "M4 2h8l4 4v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z " +
+                    "M12 2v4h4 " +
+                    // більш компактна X
+                    "M7 10l4 6M11 10l-4 6";
 
     private static IconsUtil intance;
 
@@ -34,6 +40,14 @@ public class IconsUtil {
         SVGPath icon = new SVGPath();
         icon.setContent(plusIconString);
         icon.setStyle("-fx-fill: rgba(0,250,12,0); -fx-stroke: #00ff51; -fx-stroke-width: 3px;");
+        return icon;
+    }
+
+    public static SVGPath getExcelImportIcon() {
+        SVGPath icon = new SVGPath();
+        icon.setContent(excelImportIconString);
+        // стилізація: зелений акцент, щоб асоціювалось із Excel
+        icon.setStyle("-fx-fill: #ffffff; -fx-stroke: #1D6F42; -fx-stroke-width: 1.5px;");
         return icon;
     }
 
