@@ -1,5 +1,6 @@
 package com.work.oblikcars.Utils.DB;
 
+import com.work.oblikcars.dto.Registers.CarRegister.CarReportDTO;
 import com.work.oblikcars.model.CarReportRow;
 import com.work.oblikcars.model._Car;
 
@@ -453,7 +454,7 @@ public class CarUtil {
 
                 // Останній пробіг на дату
                 double lastMiles = getDateMileage(carId, reportDate);
-                double rentalMiles = lastMiles - startMiles;
+                double rentalMiles = getRentalMileageTillDate(carId, reportDate);
                 if (rentalMiles < 0) rentalMiles = 0.0;
 
                 // "Передано в рент" — якщо rentDate існує і <= reportDate
@@ -482,6 +483,126 @@ public class CarUtil {
 
         return rows;
     }
+
+    /**
+     * Sum of all finished lists mileage for a car:
+     * Σ max(endmileage - startmileage, 0)
+     */
+    public double getTotalRentalMileage(int carId) {
+        String sql = """
+        SELECT COALESCE(SUM(GREATEST(endmileage - startmileage, 0)), 0) AS total
+        FROM lists
+        WHERE carid = ? AND done = TRUE
+    """;
+
+        try (Connection connection = Connect();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, carId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error calculating total rental mileage: " + e.getMessage());
+        }
+        return 0.0;
+    }
+
+    /**
+     * Sum of finished lists mileage for a car up to a date (inclusive):
+     * only lists with enddate <= reportDate are counted
+     */
+    public double getRentalMileageTillDate(int carId, LocalDate reportDate) {
+        String sql = """
+        SELECT COALESCE(SUM(GREATEST(endmileage - startmileage, 0)), 0) AS total
+        FROM lists
+        WHERE carid = ? AND done = TRUE AND enddate <= ?
+    """;
+
+        try (Connection connection = Connect();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, carId);
+            stmt.setDate(2, java.sql.Date.valueOf(reportDate));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error calculating rental mileage till date: " + e.getMessage());
+        }
+        return 0.0;
+    }
+
+
+    public List<CarReportDTO> getCarReportRowsDTO(LocalDate reportDate) {
+        List<CarReportDTO> rows = new ArrayList<>();
+        String sql = """
+        SELECT *
+          FROM cars
+      ORDER BY cars.id
+    """;
+
+        try (Connection conn = Connect();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            int idx = 1;
+            while (rs.next()) {
+                // --- purchaseDate ---
+                Date purchaseSql = rs.getDate("purchaseDate");
+                LocalDate purchaseDate = (purchaseSql != null) ? purchaseSql.toLocalDate() : null;
+
+                // якщо є дата купівлі, але вона після reportDate → пропускаємо
+                if (purchaseDate != null && purchaseDate.isAfter(reportDate)) {
+                    continue;
+                }
+
+                int carId        = rs.getInt("id");
+                String model     = rs.getString("model");
+                String color     = rs.getString("color");
+                String number    = rs.getString("number");
+                int year         = rs.getInt("year");
+                double price     = rs.getDouble("price");
+                double startMiles= rs.getDouble("mileageStart");
+
+                Double firstRegD  = rs.getObject("priceOfFirstRegistration", Double.class);
+                Double transportD = rs.getObject("transportPrice", Double.class);
+
+                double firstReg       = (firstRegD != null) ? firstRegD : 0.0;
+                double transportPrice = (transportD != null) ? transportD : 0.0;
+
+                Date rentSql = rs.getDate("rentdate");
+                LocalDate rentDate = (rentSql != null) ? rentSql.toLocalDate() : null;
+
+                // останній пробіг на дату
+                double lastMiles   = getDateMileage(carId, reportDate);
+                double rentalMiles = getRentalMileageTillDate(carId, reportDate);
+                if (rentalMiles < 0) rentalMiles = 0.0;
+
+                boolean rented = (rentDate != null) && !rentDate.isAfter(reportDate);
+
+                CarReportDTO dto = new CarReportDTO(
+                        idx++,
+                        model,
+                        color,
+                        number,
+                        year,
+                        price,
+                        rented ? "Так" : "Ні",
+                        rentalMiles,
+                        firstReg,
+                        transportPrice,
+                        rentDate,
+                        purchaseDate, // ← може бути null
+                        lastMiles
+                );
+                rows.add(dto);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return rows;
+    }
+
 
 
 

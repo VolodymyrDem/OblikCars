@@ -4,15 +4,15 @@ package com.work.oblikcars.pages.handbooks.cars;
 import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.IconsUtil;
+import com.work.oblikcars.dto.handbooks.CarHandbook.CarMappers;
+import com.work.oblikcars.dto.handbooks.CarHandbook.CarsTableRowDTO;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -20,14 +20,13 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.application.Platform;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public class CarsHandbookController extends WindowController {
-    private ObservableList<_Car> cars;
+    private ObservableList<CarsTableRowDTO> rows;   // <-- DTO
     private MainPage mainPage;
     private CarUtil carUtil;
-    private TableView<_Car> carsTable;
+    private TableView<CarsTableRowDTO> carsTable;   // <-- DTO
     private VBox tableContainer;
     private Pagination pagination;
     private HBox paginationBar;
@@ -42,7 +41,7 @@ public class CarsHandbookController extends WindowController {
 
         carUtil = CarUtil.getInstance();
         carsTable = new TableView<>();
-        cars = FXCollections.observableArrayList();
+        rows = FXCollections.observableArrayList();
 
         Button addButton = new Button("Додати авто");
         addButton.setGraphic(IconsUtil.getPlusIcon());
@@ -68,78 +67,93 @@ public class CarsHandbookController extends WindowController {
         updateButton.getStyleClass().add("uniform-button");
 
 
-        TableColumn<_Car, String> vinCol = new TableColumn<>("vin");
+        // ---- КОЛОНКИ ТЕПЕР ПРАЦЮЮТЬ ПО DTO ----
+        TableColumn<CarsTableRowDTO, Number> rowNoCol = new TableColumn<>("№");
+        rowNoCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
+        rowNoCol.setMinWidth(40);
+        rowNoCol.setMaxWidth(90);
+        TableColumn<CarsTableRowDTO, String> vinCol = new TableColumn<>("vin");
         vinCol.setCellValueFactory(new PropertyValueFactory<>("vin"));
 
-        TableColumn<_Car, String> numberCol = new TableColumn<>("Номер");
+        TableColumn<CarsTableRowDTO, String> numberCol = new TableColumn<>("Номер");
         numberCol.setCellValueFactory(new PropertyValueFactory<>("number"));
 
-        TableColumn<_Car, String> modelCol = new TableColumn<>("Модель");
+        TableColumn<CarsTableRowDTO, String> modelCol = new TableColumn<>("Модель");
         modelCol.setCellValueFactory(new PropertyValueFactory<>("model"));
 
-        TableColumn<_Car, String> yearCol = new TableColumn<>("Рік випуску");
+        TableColumn<CarsTableRowDTO, Integer> yearCol = new TableColumn<>("Рік випуску");
         yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
 
-        TableColumn<_Car, String> colorCol = new TableColumn<>("Колір");
+        TableColumn<CarsTableRowDTO, String> colorCol = new TableColumn<>("Колір");
         colorCol.setCellValueFactory(new PropertyValueFactory<>("color"));
 
-        TableColumn<_Car, String> descriptionCol = new TableColumn<>("Опис");
+        TableColumn<CarsTableRowDTO, String> descriptionCol = new TableColumn<>("Опис");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        TableColumn<_Car, LocalDate> purchaseDate = new TableColumn<>("Дата купівлі");
+        TableColumn<CarsTableRowDTO, java.time.LocalDate> purchaseDate = new TableColumn<>("Дата купівлі");
         purchaseDate.setCellValueFactory(new PropertyValueFactory<>("purchaseDate"));
 
-
-        TableColumn<_Car, String> fuelCol = new TableColumn<>("Тип палива");
+        TableColumn<CarsTableRowDTO, String> fuelCol = new TableColumn<>("Тип палива");
         fuelCol.setCellValueFactory(new PropertyValueFactory<>("fuel"));
 
-        TableColumn<_Car, String> engineVolumeCol = new TableColumn<>("Об'єм двигуна");
+        TableColumn<CarsTableRowDTO, Double> engineVolumeCol = new TableColumn<>("Об'єм двигуна");
         engineVolumeCol.setCellValueFactory(new PropertyValueFactory<>("engineVolume"));
 
-        TableColumn<_Car, LocalDate> rentDateCol = new TableColumn<>("Дата передачі в ренту");
+        TableColumn<CarsTableRowDTO, java.time.LocalDate> rentDateCol = new TableColumn<>("Дата передачі в ренту");
         rentDateCol.setCellValueFactory(new PropertyValueFactory<>("rentDate"));
 
-        TableColumn<_Car, String> mileageStartCol = new TableColumn<>("Початковий пробіг");
+        TableColumn<CarsTableRowDTO, Double> mileageStartCol = new TableColumn<>("Початковий пробіг");
         mileageStartCol.setCellValueFactory(new PropertyValueFactory<>("mileageStart"));
 
-        TableColumn<_Car, LocalDate> firstRegistrationDateCol = new TableColumn<>("Дата першої реєстрації");
+        TableColumn<CarsTableRowDTO, java.time.LocalDate> firstRegistrationDateCol = new TableColumn<>("Дата першої реєстрації");
         firstRegistrationDateCol.setCellValueFactory(new PropertyValueFactory<>("firstRegistrationDate"));
 
-        TableColumn<_Car, String> priceOfFirstRegistrationCol = new TableColumn<>("Вартість першої реєстрації");
+        TableColumn<CarsTableRowDTO, Double> priceOfFirstRegistrationCol = new TableColumn<>("Вартість першої реєстрації");
         priceOfFirstRegistrationCol.setCellValueFactory(new PropertyValueFactory<>("priceOfFirstRegistration"));
 
-        TableColumn<_Car, String> priceCol = new TableColumn<>("Вартість купівлі");
+        TableColumn<CarsTableRowDTO, Double> priceCol = new TableColumn<>("Вартість купівлі");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
 
-
-        TableColumn<_Car, String> transportPriceCol = new TableColumn<>("Вартість транспортування");
+        TableColumn<CarsTableRowDTO, Double> transportPriceCol = new TableColumn<>("Вартість транспортування");
         transportPriceCol.setCellValueFactory(new PropertyValueFactory<>("transportPrice"));
 
-        TableColumn<_Car, String> removeDateCol = new TableColumn<>("Дата зняття з експлуатації");
-        removeDateCol.setCellValueFactory(cellData -> {
-            return new ReadOnlyStringWrapper(cellData.getValue().isValid() ? "" : String.valueOf(cellData.getValue().getRemoveDate()));
+        TableColumn<CarsTableRowDTO, java.time.LocalDate> removeDateRawCol = new TableColumn<>("Знято (дата)");
+        removeDateRawCol.setCellValueFactory(new PropertyValueFactory<>("removeDate"));
+        removeDateRawCol.setComparator(java.util.Comparator.naturalOrder()); // важливо для датного сортування
+        removeDateRawCol.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(java.time.LocalDate value, boolean empty) {
+                super.updateItem(value, empty);
+                setText(empty ? null : (value == null ? "" : dateFormatter.format(value)));
+            }
         });
 
-        TableColumn<_Car, String> actualCol = new TableColumn<>("Актуальність");
-        actualCol.setCellValueFactory(cellData -> {
-            return new ReadOnlyStringWrapper(cellData.getValue().isValid() ? "Валідний" : "Невалідний");
-        });
+        TableColumn<CarsTableRowDTO, String> actualCol = new TableColumn<>("Актуальність");
+        actualCol.setCellValueFactory(new PropertyValueFactory<>("actual")); // обчислено у DTO
 
+        formatDateColumn(purchaseDate);
+        formatDateColumn(rentDateCol);
+        formatDateColumn(firstRegistrationDateCol);
 
-        carsTable.getColumns().addAll(vinCol, numberCol, colorCol, modelCol,yearCol, fuelCol, engineVolumeCol,purchaseDate, rentDateCol,
-                mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol, transportPriceCol,descriptionCol, removeDateCol, actualCol);
+        carsTable.getColumns().addAll(
+                rowNoCol, vinCol, numberCol, colorCol, modelCol, yearCol, fuelCol, engineVolumeCol, purchaseDate,
+                rentDateCol, mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol,
+                transportPriceCol, descriptionCol, removeDateRawCol, actualCol
+        );
 
-        carsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            boolean isItemSelected = newSelection != null;
-            editButton.setDisable(!isItemSelected);
-            deleteButton.setDisable(!isItemSelected);
+        carsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            boolean selected = newSel != null;
+            editButton.setDisable(!selected);
+            deleteButton.setDisable(!selected);
         });
 
         editButton.setOnAction(e -> {
-            _Car selectedCar = carsTable.getSelectionModel().getSelectedItem();
-            if (selectedCar != null) {
-                CarCardController carCardController = new CarCardController();
-                carCardController.openWindow(this, selectedCar);
+            CarsTableRowDTO dto = carsTable.getSelectionModel().getSelectedItem();
+            if (dto != null) {
+                _Car fresh = carUtil.getCarById(dto.getId()); // <-- завжди свіжа ентіті для форми
+                if (fresh != null) {
+                    CarCardController carCardController = new CarCardController();
+                    carCardController.openWindow(this, fresh);
+                }
             }
         });
 
@@ -152,24 +166,27 @@ public class CarsHandbookController extends WindowController {
             carCardController.openWindow(this, null);
         });
 
-        deleteButton.setOnAction(e->{
-            _Car selectedCar = carsTable.getSelectionModel().getSelectedItem();
-            if (selectedCar != null) {
+        deleteButton.setOnAction(e -> {
+            CarsTableRowDTO dto = carsTable.getSelectionModel().getSelectedItem();
+            if (dto != null) {
                 Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити транспортний засіб");
                 confirmationAlert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
-                        carUtil.deleteCarPermanently(selectedCar);
+                        carUtil.deleteCarPermanentlyById(dto.getId()); // <-- через id
                         updateValues();
                     }
                 });
-
             }
         });
 
         pagination = new Pagination(1, 0);
-        pagination.setPageFactory(this::createPage);
-        enableGlobalSorting(carsTable, cars, pagination);
-        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(cars, carsTable, pagination));
+        pagination.setPageFactory(pageIndex -> {
+            Object r = carsTable.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+            if (r instanceof Runnable rep) rep.run();
+            return new VBox(); // порожній вузол; все відмальовано самим repaginate
+        });
+        enableGlobalSorting(carsTable, rows, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, carsTable, pagination));
 
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton, deleteButton);
@@ -226,45 +243,32 @@ public class CarsHandbookController extends WindowController {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                List<_Car> newCars;
-                newCars = carUtil.getAllCars().stream()
+                List<_Car> newCars = carUtil.getAllCars().stream()
                         .sorted((c1, c2) -> Integer.compare(c1.getId(), c2.getId()))
                         .toList();
 
+                // Мапимо в DTO + ставимо загальний порядковий номер
+                List<CarsTableRowDTO> newRows = new java.util.ArrayList<>(newCars.size());
+                for (int i = 0; i < newCars.size(); i++) {
+                    newRows.add(CarMappers.toDto(newCars.get(i), i + 1));
+                }
 
                 Platform.runLater(() -> {
-                    cars.setAll(newCars);
+                    // 1) оновлюємо masterData для SortedList
+                    rows.setAll(newRows);
 
-                    int pageCount = (int) Math.ceil((double) cars.size() / rowsPerPage);
-                    pagination.setPageCount(Math.max(pageCount, 1));
-                    int lastPage = Math.max(pageCount - 1, 0);
-                    pagination.setCurrentPageIndex(lastPage);
+                    // 2) просимо «глобальний» репагінатор перерахувати сторінки і відрізати поточний зріз
+                    Object r = carsTable.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+                    if (r instanceof Runnable rep) rep.run();
 
-                    int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, cars.size());
-                    carsTable.setItems(FXCollections.observableArrayList(cars.subList(fromIndex, toIndex)));
-
+                    // 3) оформлення
                     tableContainer.getChildren().setAll(carsTable);
-
                     moveTableDown(carsTable);
                 });
+
                 return null;
             }
         };
         new Thread(task).start();
     }
-
-    private Node createPage(int pageIndex) {
-        int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, cars.size());
-
-        if (fromIndex > toIndex) {
-            carsTable.setItems(FXCollections.observableArrayList());
-        } else {
-            carsTable.setItems(FXCollections.observableArrayList(cars.subList(fromIndex, toIndex)));
-        }
-
-        return new VBox();
-    }
-
 }

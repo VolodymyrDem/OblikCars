@@ -1,41 +1,46 @@
+// ======================= MILEAGE REGISTER =======================
 package com.work.oblikcars.pages.registers.mileage;
 
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.ListUtil;
 import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
+import com.work.oblikcars.dto.Registers.MileageRegister.MileageRegisterMappers;
+import com.work.oblikcars.dto.Registers.MileageRegister.MileageRegisterRowDTO;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.model._List;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class MileageRegisterController extends WindowController {
-    private ObservableList<_List> lists;
+    private ObservableList<MileageRegisterRowDTO> rows;
+    private TableView<MileageRegisterRowDTO> table;
+
     private MainPage mainPage;
     private ListUtil listUtil;
-    private TableView<_List> listsTable;
+    private CarUtil carUtil;
+    private HBox paginationBar;
+
     private VBox tableContainer;
     private Pagination pagination;
-    private HBox paginationBar;
-    private CarUtil carUtil;
+
     private DatePicker startDate;
     private DatePicker endDate;
     private CheckComboBox<String> carField;
@@ -46,190 +51,132 @@ public class MileageRegisterController extends WindowController {
     public void openWindow(){
         String windowTitle = "Реєстр: пройдений кілометраж";
         mainPage = MainPage.getInstance();
-
         if(mainPage.checkOpenWindow(windowTitle))return;
 
         listUtil = ListUtil.getInstance();
-        listsTable = new TableView<>();
-        lists = FXCollections.observableArrayList();
         carUtil = CarUtil.getInstance();
+
+        rows  = FXCollections.observableArrayList();
+        table = new TableView<>();
 
         carMap = carUtil.getAllCarComboMap(true);
 
-        Label carLabel = new Label("Авто:");
-        Label timeLabel = new Label("Період: з ");
+        Label carLabel   = new Label("Авто:");
+        Label timeLabel  = new Label("Період: з ");
         Label timeLabel2 = new Label("по");
+
         Button filterButton = new Button("Застосувати фільтр");
         filterButton.setGraphic(IconsUtil.getFilterIcon());
+        filterButton.getStyleClass().add("uniform-button");
+
+        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
+        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
+
         Button saveButton = new Button("Зберегти реєстр");
         saveButton.setGraphic(IconsUtil.getTikIcon());
+        saveButton.getStyleClass().add("uniform-button");
+
         Button settingsButton = new Button();
         settingsButton.setGraphic(IconsUtil.getClockIcon());
+
         startDate = new DatePicker();
-        endDate = new DatePicker();
+        endDate   = new DatePicker();
+
         carField = new CheckComboBox<>();
         carField.setPrefWidth(200);
         carField.setMaxWidth(200);
         carField.setMinWidth(200);
         carField.getItems().addAll(carMap.values());
 
-        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
-        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
-
-        filterButton.getStyleClass().add("uniform-button");
-        saveButton.getStyleClass().add("uniform-button");
-
         Button updateButton = new Button();
-        updateButton.getStyleClass().add("grey-button");
+        updateButton.getStyleClass().addAll("grey-button", "uniform-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
-
-        updateButton.getStyleClass().add("uniform-button");
-        filterButton.setOnAction(event -> {
-            updateValues();
-        });
-
-        updateButton.setOnAction(event -> {
-            updateValues();
-        });
-
-        settingsButton.setOnAction(e-> {
-            new PeriodController(
-                    "Реєстр: пройдений кілометраж — налаштування періоду",
-                    this::updateDates
-            ).openWindow();
-        });
 
         Button openFolderButton = new Button("Відкрити папку");
         openFolderButton.setGraphic(IconsUtil.getFolderIcon());
-        openFolderButton.getStyleClass().add("grey-button");
-        openFolderButton.setOnAction(e -> {
-            DocumentsUtil.openFolder(6);
+        openFolderButton.getStyleClass().addAll("grey-button", "uniform-button");
+        openFolderButton.setOnAction(e -> DocumentsUtil.openFolder(6));
+
+        filterButton.setOnAction(e -> updateValues());
+        updateButton.setOnAction(e -> updateValues());
+
+        settingsButton.setOnAction(e-> new PeriodController(
+                "Реєстр: пройдений кілометраж — налаштування періоду",
+                this::updateDates
+        ).openWindow());
+
+        saveButton.setOnAction(e -> {
+            DocumentsUtil.initializeDirectories();
+            String fileName = "Реєстр пройдений кілометраж " +
+                    startDate.getValue().format(dateFormatterFile) + " -- " +
+                    endDate.getValue().format(dateFormatterFile);
+            DocumentsUtil.exportTableViewToExcel(
+                    table, new ArrayList<>(rows),
+                    MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                    6, fileName
+            );
         });
-        openFolderButton.getStyleClass().add("uniform-button");
-
-        saveButton.setOnAction(
-                event -> {
-                    DocumentsUtil util = DocumentsUtil.getInstance();
-                    DocumentsUtil.initializeDirectories();
-
-                    String fileName = "Реєстр пройдений кілометраж " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
-
-                    DocumentsUtil.exportTableViewToExcel(
-                            listsTable,
-                            new ArrayList<>(lists), // усі рядки
-                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
-                            6,
-                            fileName
-                    );
-                }
-        );
 
         toggleCarSelectionBtn.setOnAction(e -> {
             var checkModel = carField.getCheckModel();
             if (checkModel.getCheckedItems().isEmpty()) {
-                // якщо нічого не обрано — обираємо всі
                 carField.getItems().forEach(item -> checkModel.check(item));
             } else {
-                // якщо є хоча б один — чистимо вибір
                 checkModel.clearChecks();
             }
         });
 
+        // ---------- КОЛОНКИ ----------
+        TableColumn<MileageRegisterRowDTO, Integer> numCol = new TableColumn<>("№ п.п.");
+        numCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
 
+        numCol.setMinWidth(40);
+        numCol.setMaxWidth(90);
+        TableColumn<MileageRegisterRowDTO, String> carCol = new TableColumn<>("Авто");
+        carCol.setCellValueFactory(new PropertyValueFactory<>("carBox"));
 
-        TableColumn<_List, String> carCol = new TableColumn<>("Авто");
-        carCol.setCellValueFactory(cellData -> {
-            _Car car = carUtil.getCarById(cellData.getValue().getCarId());
-            String boxString = (car != null) ? car.getBoxString() : "Невідомо";
-            return new ReadOnlyStringWrapper(boxString);
-        });
+        TableColumn<MileageRegisterRowDTO, String> periodCol = new TableColumn<>("Період");
+        periodCol.setCellValueFactory(new PropertyValueFactory<>("periodText"));
 
-        TableColumn<_List, String> dateCol = new TableColumn<>("Період");
-        dateCol.setCellValueFactory(cellData -> {
-            String res = cellData.getValue().getStartDate().toString() + " -- " + cellData.getValue().getEndDate().toString();
-            return new ReadOnlyStringWrapper(res);
-        });
+        TableColumn<MileageRegisterRowDTO, String> mileageCol = new TableColumn<>("Пробіг");
+        mileageCol.setCellValueFactory(new PropertyValueFactory<>("distanceDisplay"));
 
-
-        TableColumn<_List, String> mileageCol = new TableColumn<>("Пробіг");
-        mileageCol.setCellValueFactory(cellData -> {
-            String res = String.valueOf(cellData.getValue().getEndMileage() - cellData.getValue().getStartMileage());
-            return new ReadOnlyStringWrapper(res);
-        });
-
-
-        listsTable.getColumns().addAll(carCol, dateCol, mileageCol);
-
-        listsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            boolean isItemSelected = newSelection != null;
-        });
+        table.getColumns().addAll(numCol, carCol, periodCol, mileageCol);
 
         pagination = new Pagination(1, 0);
-        pagination.setPageFactory(this::createPage);
-        enableGlobalSorting(listsTable, lists, pagination);
-        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(lists, listsTable, pagination));
+        enableGlobalSorting(table, rows, pagination);
+        pagination.setPageFactory(pageIndex -> {
+            Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+            if (r instanceof Runnable rep) rep.run();
+            return new VBox();
+        });
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, table, pagination));
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton, openFolderButton);
-
+        HBox buttonBox = new HBox(
+                10, updateButton, timeLabel, startDate, timeLabel2, endDate,
+                settingsButton, carLabel, carField, toggleCarSelectionBtn,
+                filterButton, saveButton, openFolderButton
+        );
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        listsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(listsTable, Priority.ALWAYS);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-        tableContainer = new VBox(listsTable);
+        tableContainer = new VBox(table);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         updateValues();
 
-        VBox table = new VBox();
-        VBox.setVgrow(table, Priority.ALWAYS);
-
-        table.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        listsTable.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
-
-        mainPage.openInternalWindow(table, windowTitle, true);
-
+        VBox root = new VBox(buttonBox, tableContainer, new VBox(paginationBar, pagination));
+        VBox.setVgrow(root, Priority.ALWAYS);
+        mainPage.openInternalWindow(root, windowTitle, true);
     }
 
     public void updateValues() {
-        // 1. Зчитуємо дати з DatePicker
         LocalDate start = startDate.getValue();
-        LocalDate end = endDate.getValue();
+        LocalDate end   = endDate.getValue();
 
-        // 2. Збираємо вибрані значення з CheckComboBox (рядки)
         List<String> selectedCarNames = carField.getCheckModel().getCheckedItems();
-
-        // 3. Переводимо вибрані рядки у список ідентифікаторів
-        //    (порівнюючи зі значеннями з carMap)
         List<Integer> selectedCarIds = carMap.entrySet().stream()
                 .filter(entry -> selectedCarNames.contains(entry.getValue()))
                 .map(Map.Entry::getKey)
@@ -238,59 +185,41 @@ public class MileageRegisterController extends WindowController {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-
-                List<_List> newLists;
-
-                // Перевірка, чи є вибрані carId
+                List<_List> raw;
                 if (selectedCarIds == null || selectedCarIds.isEmpty()) {
-                    // Якщо жодне авто не вибране, беремо ВСІ carId:
-                    List<Integer> allCarIds = carMap.keySet().stream().toList();
-
-                    // Викликаємо фільтрацію за датами і всіма машинами:
-                    newLists = listUtil.getListsByCarsDates(start, end, allCarIds).stream()
-                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
-                            .toList();
+                    List<Integer> allCarIds = new ArrayList<>(carMap.keySet());
+                    raw = listUtil.getListsByCarsDates(start, end, allCarIds);
                 } else {
-                    // Якщо вибрані конкретні авто — фільтруємо за ними
-                    newLists = listUtil.getListsByCarsDates(start, end, selectedCarIds).stream()
-                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
-                            .toList();
+                    raw = listUtil.getListsByCarsDates(start, end, selectedCarIds);
                 }
 
+                List<_List> sorted = raw.stream()
+                        .sorted(Comparator.comparingInt(_List::getCarId))
+                        .toList();
+
+                Map<Integer, _Car> carsById = sorted.stream()
+                        .map(_List::getCarId)
+                        .distinct()
+                        .collect(Collectors.toMap(id -> id, carUtil::getCarById));
+
+                List<MileageRegisterRowDTO> mapped = new ArrayList<>(sorted.size());
+                for (int i = 0; i < sorted.size(); i++) {
+                    _List l = sorted.get(i);
+                    _Car car = carsById.get(l.getCarId());
+                    mapped.add(MileageRegisterMappers.toDto(l, car, i + 1));
+                }
 
                 Platform.runLater(() -> {
-                    lists.setAll(newLists);
-
-                    int pageCount = (int) Math.ceil((double) lists.size() / rowsPerPage);
-                    pagination.setPageCount(Math.max(pageCount, 1));
-                    int lastPage = Math.max(pageCount - 1, 0);
-                    pagination.setCurrentPageIndex(lastPage);
-
-                    int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, lists.size());
-                    listsTable.setItems(FXCollections.observableArrayList(lists.subList(fromIndex, toIndex)));
-
-                    tableContainer.getChildren().setAll(listsTable);
-
-                    moveTableDown(listsTable);
+                    rows.setAll(mapped);
+                    Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+                    if (r instanceof Runnable rep) rep.run();
+                    tableContainer.getChildren().setAll(table);
+                    moveTableDown(table);
                 });
                 return null;
             }
         };
-        new Thread(task).start();
-    }
-
-    private Node createPage(int pageIndex) {
-        int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, lists.size());
-
-        if (fromIndex > toIndex) {
-            listsTable.setItems(FXCollections.observableArrayList());
-        } else {
-            listsTable.setItems(FXCollections.observableArrayList(lists.subList(fromIndex, toIndex)));
-        }
-
-        return new VBox();
+        new Thread(task, "load-mileage-register").start();
     }
 
     public void updateDates(LocalDate start, LocalDate end) {

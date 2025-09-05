@@ -5,19 +5,16 @@ import com.work.oblikcars.Utils.DB.CarDisposalUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.DBUtil;
 import com.work.oblikcars.Utils.IconsUtil;
-import com.work.oblikcars.model._Car;
+import com.work.oblikcars.dto.Journals.CarDisposalJournal.CarDisposalRowDTO;
+import com.work.oblikcars.dto.Journals.CarDisposalJournal.DisposalMappers;
 import com.work.oblikcars.model._CarDisposal;
-import com.work.oblikcars.model._List;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.journals.list.ListCardController;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -25,13 +22,15 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class CarDisposalJournalController extends WindowController {
-    private ObservableList<_CarDisposal> carDisposals;
+    private ObservableList<CarDisposalRowDTO> rows;
     private MainPage mainPage;
     private CarDisposalUtil carDisposalUtil;
-    private TableView<_CarDisposal> carDisposalTable;
+    private TableView<CarDisposalRowDTO> table;
     private VBox tableContainer;
     private Pagination pagination;
     private HBox paginationBar;
@@ -42,87 +41,92 @@ public class CarDisposalJournalController extends WindowController {
     public void openWindow() {
         String windowTitle = "Журнал: вибуття авто";
         mainPage = MainPage.getInstance();
-        if(mainPage.checkOpenWindow(windowTitle))return;
+        if (mainPage.checkOpenWindow(windowTitle)) return;
 
         carDisposalUtil = CarDisposalUtil.getInstance();
-        carDisposalTable = new TableView<>();
-        carDisposals = FXCollections.observableArrayList();
         carUtil = CarUtil.getInstance();
+
+        table = new TableView<>();
+        rows  = FXCollections.observableArrayList();
 
         Button addButton = new Button("Додати вибуття");
         addButton.setGraphic(IconsUtil.getPlusIcon());
-        addButton.getStyleClass().add("green-button");
+        addButton.getStyleClass().addAll("green-button", "uniform-button");
 
         Button editButton = new Button("Редагувати вибуття");
         editButton.setGraphic(IconsUtil.getPencilIcon());
         editButton.setDisable(true);
-        editButton.getStyleClass().add("yellow-button");
+        editButton.getStyleClass().addAll("yellow-button", "uniform-button");
 
-        Button DeleteButton = new Button("Видалити вибуття");
-        DeleteButton.setGraphic(IconsUtil.getRubbishIcon());
-        DeleteButton.setDisable(true);
-        DeleteButton.getStyleClass().add("red-button");
+        Button deleteButton = new Button("Видалити вибуття");
+        deleteButton.setGraphic(IconsUtil.getRubbishIcon());
+        deleteButton.setDisable(true);
+        deleteButton.getStyleClass().addAll("red-button", "uniform-button");
 
         Button updateButton = new Button();
-        updateButton.getStyleClass().add("grey-button");
+        updateButton.getStyleClass().addAll("grey-button", "uniform-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
 
-        addButton.getStyleClass().add("uniform-button");
-        editButton.getStyleClass().add("uniform-button");
-        DeleteButton.getStyleClass().add("uniform-button");
-        updateButton.getStyleClass().add("uniform-button");
+        // ---- колонки (типи правильні: LocalDate/Double/String) ----
+        TableColumn<CarDisposalRowDTO, Number> rowNoCol = new TableColumn<>("№");
+        rowNoCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
+        rowNoCol.setMinWidth(40);
+        rowNoCol.setMaxWidth(90);
+        TableColumn<CarDisposalRowDTO, String> carCol = new TableColumn<>("Авто");
+        carCol.setCellValueFactory(new PropertyValueFactory<>("carBox"));
 
-        TableColumn<_CarDisposal, String> carCol = new TableColumn<>("Авто");
-        carCol.setCellValueFactory(cellData -> {
-            _Car car = carUtil.getCarById(cellData.getValue().getCarId());
-            String boxString = (car != null) ? car.getBoxString() : "Невідомо";
-            return new ReadOnlyStringWrapper(boxString);
-        });
-        TableColumn<_CarDisposal, LocalDate> dateCol = new TableColumn<>("Дата");
+        TableColumn<CarDisposalRowDTO, LocalDate> dateCol = new TableColumn<>("Дата");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
+        formatDateColumn(dateCol); // dd.MM.yyyy, але тип LocalDate
 
-        TableColumn<_CarDisposal, LocalDate> reasonCol = new TableColumn<>("Причина");
+        TableColumn<CarDisposalRowDTO, String> reasonCol = new TableColumn<>("Причина");
         reasonCol.setCellValueFactory(new PropertyValueFactory<>("reason"));
 
-        TableColumn<_CarDisposal, LocalDate> priceCol = new TableColumn<>("Вартість");
+        TableColumn<CarDisposalRowDTO, Double> priceCol = new TableColumn<>("Вартість");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
+        formatDoubleColumn(priceCol, "#,##0.00");
 
-        TableColumn<_CarDisposal, LocalDate> descriptionCol = new TableColumn<>("Коментар");
+        TableColumn<CarDisposalRowDTO, String> descriptionCol = new TableColumn<>("Коментар");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        carDisposalTable.getColumns().addAll(carCol, dateCol, reasonCol, priceCol, descriptionCol);
+        table.getColumns().addAll(
+                rowNoCol, carCol, dateCol, reasonCol, priceCol, descriptionCol
+        );
 
-        carDisposalTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            boolean isItemSelected = newSelection != null;
-            editButton.setDisable(!isItemSelected);
-            DeleteButton.setDisable(!isItemSelected);
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            boolean sel = newSel != null;
+            editButton.setDisable(!sel);
+            deleteButton.setDisable(!sel);
         });
 
         editButton.setOnAction(e -> {
-            _CarDisposal selected = carDisposalTable.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                CarDisposalCardController controller = new CarDisposalCardController();
-                controller.openWindow(this, selected);
+            CarDisposalRowDTO dto = table.getSelectionModel().getSelectedItem();
+            if (dto != null) {
+                _CarDisposal entity = carDisposalUtil.getAllDisposals()
+                        .stream().filter(d -> d.getId() == dto.getId()).findFirst().orElse(null);
+                if (entity != null) {
+                    CarDisposalCardController controller = new CarDisposalCardController();
+                    controller.openWindow(this, entity);
+                }
             }
         });
 
-        updateButton.setOnAction(e->{
-            updateValues();
-        });
+        updateButton.setOnAction(e -> updateValues());
 
         addButton.setOnAction(e -> {
             CarDisposalCardController controller = new CarDisposalCardController();
             controller.openWindow(this, null);
         });
 
-        DeleteButton.setOnAction(e->{
-            _CarDisposal selected = carDisposalTable.getSelectionModel().getSelectedItem();
-            if (selected != null) {
+        deleteButton.setOnAction(e -> {
+            CarDisposalRowDTO dto = table.getSelectionModel().getSelectedItem();
+            if (dto != null) {
                 Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити вибуття");
                 confirmationAlert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
-                        carUtil.markCarAsValidById(selected.getCarId());
-                        carDisposalUtil.deleteDisposal(selected);
+                        // повертаємо авто у валідні (як і було)
+                        carUtil.markCarAsValidById(dto.getCarId());
+                        carDisposalUtil.deleteDisposalById(dto.getId());
                         updateValues();
                     }
                 });
@@ -130,106 +134,90 @@ public class CarDisposalJournalController extends WindowController {
         });
 
         pagination = new Pagination(1, 0);
-        pagination.setPageFactory(this::createPage);
-        enableGlobalSorting(carDisposalTable, carDisposals, pagination);
-        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(carDisposals, carDisposalTable, pagination));
 
-        HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
+        // Глобальне сортування + пагінація через SortedList
+        enableGlobalSorting(table, rows, pagination);
 
-        if(DBUtil.getInstance().getUsername().equals("root")){
-            buttonBox.getChildren().add(DeleteButton);
+        // PageFactory лише тригерить репагінацію (все ріже GLOBAL_SORTED_REPAGINATE)
+        pagination.setPageFactory(pageIndex -> {
+            Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+            if (r instanceof Runnable rep) rep.run();
+            return new VBox();
+        });
+
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, table, pagination));
+
+        HBox buttonBox = new HBox(10, updateButton, addButton, editButton);
+        if ("root".equals(DBUtil.getInstance().getUsername())) {
+            buttonBox.getChildren().add(deleteButton);
         }
-
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        carDisposalTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(carDisposalTable, Priority.ALWAYS);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-        tableContainer = new VBox(carDisposalTable);
+        tableContainer = new VBox(table);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         updateValues();
 
-        VBox table = new VBox();
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox root = new VBox();
+        VBox.setVgrow(root, Priority.ALWAYS);
+
+        root.setOnKeyPressed(event -> {
+            switch (event.getCode()) {
+                case RIGHT -> {
+                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1)
+                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
+                }
+                case LEFT -> {
+                    if (pagination.getCurrentPageIndex() > 0)
+                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
+                }
+            }
+        });
 
         table.setOnKeyPressed(event -> {
             switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
+                case RIGHT -> {
+                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1)
                         pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
+                }
+                case LEFT -> {
+                    if (pagination.getCurrentPageIndex() > 0)
                         pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
+                }
             }
         });
 
-        carDisposalTable.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
-
-        mainPage.openInternalWindow(table, windowTitle, true);
+        root.getChildren().addAll(buttonBox, tableContainer, new VBox(paginationBar, pagination));
+        mainPage.openInternalWindow(root, windowTitle, true);
     }
 
     public void updateValues() {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                List<_CarDisposal> newElements;
-                newElements = carDisposalUtil.getAllDisposals().stream()
-                        .sorted((c1, c2) -> Integer.compare(c1.getId(), c2.getId()))
+                List<_CarDisposal> list = carDisposalUtil.getAllDisposals().stream()
+                        .sorted(Comparator.comparingInt(_CarDisposal::getId))
                         .toList();
 
+                List<CarDisposalRowDTO> newRows = new ArrayList<>(list.size());
+                for (int i = 0; i < list.size(); i++) {
+                    newRows.add(DisposalMappers.toDto(list.get(i), i + 1, carUtil));
+                }
 
                 Platform.runLater(() -> {
-                    carDisposals.setAll(newElements);
+                    rows.setAll(newRows);
+                    Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+                    if (r instanceof Runnable rep) rep.run();
 
-                    int pageCount = (int) Math.ceil((double) carDisposals.size() / rowsPerPage);
-                    pagination.setPageCount(Math.max(pageCount, 1));
-                    int lastPage = Math.max(pageCount - 1, 0);
-                    pagination.setCurrentPageIndex(lastPage);
-
-                    int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, carDisposals.size());
-                    carDisposalTable.setItems(FXCollections.observableArrayList(carDisposals.subList(fromIndex, toIndex)));
-
-                    tableContainer.getChildren().setAll(carDisposalTable);
-
-                    moveTableDown(carDisposalTable);
+                    tableContainer.getChildren().setAll(table);
+                    moveTableDown(table);
                 });
                 return null;
             }
         };
         new Thread(task).start();
-    }
-
-    private Node createPage(int pageIndex) {
-        int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, carDisposals.size());
-
-        if (fromIndex > toIndex) {
-            carDisposalTable.setItems(FXCollections.observableArrayList());
-        } else {
-            carDisposalTable.setItems(FXCollections.observableArrayList(carDisposals.subList(fromIndex, toIndex)));
-        }
-
-        return new VBox();
     }
 }

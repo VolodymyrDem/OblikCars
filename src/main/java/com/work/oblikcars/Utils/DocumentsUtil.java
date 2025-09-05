@@ -1,5 +1,6 @@
 package com.work.oblikcars.Utils;
 
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -22,6 +23,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.ResolverStyle;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 import java.util.stream.Collectors;
 
 import java.awt.*;
@@ -115,13 +118,24 @@ public class DocumentsUtil {
         }
     }
 
-    private enum ImportMode {
+
+    private static <T> T onFxSync(Callable<T> action) throws Exception {
+        if (Platform.isFxApplicationThread()) {
+            return action.call();
+        } else {
+            FutureTask<T> ft = new FutureTask<>(action);
+            Platform.runLater(ft);
+            return ft.get(); // блокуємо потік, доки UI не поверне значення
+        }
+    }
+
+    public  enum ImportMode {
         FUTURE_ONLY,        // як зараз: від поточного пробігу і далі
         BACKFILL_AND_MERGE  // бекстіл: додаємо відсутню історію теж
     }
 
     // Невелике вікно вибору режиму
-    private static ImportMode askImportMode(Window owner) {
+    public static ImportMode askImportMode(Window owner) {
         Alert a = new Alert(Alert.AlertType.CONFIRMATION);
         a.initOwner(owner);
         a.setTitle("Режим імпорту");
@@ -141,106 +155,54 @@ public class DocumentsUtil {
         if (res.isPresent() && res.get() == futureOnly) return ImportMode.FUTURE_ONLY;
         return null; // користувач скасував
     }
-    public static int importListsFromExcel(Window parentWindow) throws Exception {
-        FileChooser fc = new FileChooser();
-        fc.setTitle("Обрати Excel зі звітом поїздок");
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel (*.xlsx)", "*.xlsx"));
-        File file = fc.showOpenDialog(parentWindow);
-        if (file == null) return 0;
 
-        // вибір режиму
-        ImportMode mode = askImportMode(parentWindow);
-        if (mode == null) return 0; // скасували
+    public static int importListsFromExcelCore(File file, ImportMode mode) throws Exception {
+        if (file == null || mode == null) return 0;
 
-        // 1) Підтягнути всі авто заздалегідь
+        // 1) авто
         CarUtil carUtil = CarUtil.getInstance();
         List<_Car> allCars = carUtil.getAllCars();
 
-        // 2) Парс Excel
+        // 2) парс
         List<RowTrip> rows = parseExcelTrips(file);
 
-        // 3) Валідні: обидва одометри є і out > in
+        // 3) фільтр
         List<RowTrip> valid = rows.stream()
+                .filter(r -> r.tripStatus != null && r.tripStatus.trim().equalsIgnoreCase("completed"))
                 .filter(r -> r.odomIn != null && r.odomOut != null && r.odomOut > r.odomIn)
                 .toList();
 
-        // 4) Група по авто (спочатку матчимо по contains car number у полі Vehicle, потім по boxString)
+        // 4) групування
         Map<_Car, List<RowTrip>> byCar = new HashMap<>();
         for (RowTrip r : valid) {
             _Car car = matchCar(r, allCars);
-            if (car != null) {
-                byCar.computeIfAbsent(car, k -> new ArrayList<>()).add(r);
-            }
+            if (car != null) byCar.computeIfAbsent(car, k -> new ArrayList<>()).add(r);
         }
 
-        // 5) Готуємо вставку
+        // 5) підготовка
         List<_List> toInsert = new ArrayList<>();
         ListUtil listUtil = ListUtil.getInstance();
 
         for (Map.Entry<_Car, List<RowTrip>> e : byCar.entrySet()) {
             _Car car = e.getKey();
             List<RowTrip> trips = e.getValue();
-
-            // сортуємо за Check-out odometer зростально
             trips.sort(Comparator.comparingDouble(t -> t.odomOut));
 
-            // поточний пробіг авто
             Double currentMileage = getCurrentMileage(car, listUtil);
-
-            // існуючі листи
             List<_List> existing = listUtil.getListsByCarId(car.getId());
-
-            // === ДІАГНОСТИКА В КОНСОЛЬ ===
-            double minOut = trips.stream().mapToDouble(t -> t.odomOut).min().orElse(-1);
-            double maxOut = trips.stream().mapToDouble(t -> t.odomOut).max().orElse(-1);
-            double maxIn = trips.stream().mapToDouble(t -> t.odomIn).max().orElse(-1);
-            double minIn = trips.stream().mapToDouble(t -> t.odomIn).min().orElse(-1);
-
-            System.out.printf(
-                    "[IMPORT] Авто: %s (ID=%d) | currentMileage=%s | minOut=%.0f | maxOut=%.0f | minIn=%.0f |maxIn=%.0f %n",
-                    car.getBoxString(),
-                    car.getId(),
-                    currentMileage,
-                    minOut,
-                    maxOut,
-                    minIn,
-                    maxIn
-            );
-
-
-            if(currentMileage<minIn) {
-                System.out.printf(
-                        "[MESSAGE] Авто: %s (ID=%d) | currentMileage=%s | minOut=%.0f | maxOut=%.0f | minIn=%.0f |maxIn=%.0f %n",
-                        car.getBoxString(),
-                        car.getId(),
-                        currentMileage,
-                        minOut,
-                        maxOut,
-                        minIn,
-                        maxIn
-                );
-            }
-
-            // =============================
 
             int startIdx = 0;
             boolean hasExisting = !existing.isEmpty();
-
             if (mode == ImportMode.FUTURE_ONLY) {
-                if (hasExisting) {
-                    while (startIdx < trips.size() && trips.get(startIdx).odomOut < currentMileage) {
-                        startIdx++;
-                    }
-                } else {
-                    startIdx = 0;
-                }
-            } else {
-                startIdx = 0;
+                if (hasExisting) while (startIdx < trips.size() && trips.get(startIdx).odomOut < currentMileage) startIdx++;
             }
 
             for (int i = startIdx; i < trips.size(); i++) {
                 RowTrip t = trips.get(i);
                 if (alreadyExists(existing, t)) continue;
+
+                double earnings = (t.totalEarnings != null) ? t.totalEarnings : 0.0;
+                double income65 = Math.round(earnings * 0.65 * 100.0) / 100.0;
 
                 _List list = new _List(
                         car.getId(),
@@ -249,22 +211,39 @@ public class DocumentsUtil {
                         t.odomOut,
                         t.tripEnd,
                         1,
-                        t.tripDays != null ? t.tripDays : 0,
+                        (t.tripDays != null) ? t.tripDays : 0,
                         true,
-                        -1,
-                        "дозаповнити прибуток"
+                        income65,
+                        "імпорт з Excel: 65% від Total earnings"
                 );
                 toInsert.add(list);
             }
         }
 
-
-        // 6) Масова вставка
-        if (!toInsert.isEmpty()) {
-            listUtil.bulkInsert(toInsert);
-        }
+        if (!toInsert.isEmpty()) listUtil.bulkInsert(toInsert);
         return toInsert.size();
     }
+
+
+
+    public static int importListsFromExcel(Window parentWindow) throws Exception {
+        // 1) Показати FileChooser на FX (навіть якщо нас викликали з BG)
+        File file = onFxSync(() -> {
+            FileChooser fc = new FileChooser();
+            fc.setTitle("Обрати Excel зі звітом поїздок");
+            fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel (*.xlsx)", "*.xlsx"));
+            return fc.showOpenDialog(parentWindow);
+        });
+        if (file == null) return 0;
+
+        // 2) Запитати режим імпорту на FX
+        ImportMode mode = onFxSync(() -> askImportMode(parentWindow));
+        if (mode == null) return 0;
+
+        // 3) Важка робота — у потоці виклику (якщо викличеш з Task — вона піде в BG)
+        return importListsFromExcelCore(file, mode);
+    }
+
 
     private static boolean overlapsByDate(List<_List> existing, RowTrip t) {
         if (t.tripStart == null || t.tripEnd == null) return false;
@@ -289,10 +268,13 @@ public class DocumentsUtil {
         Integer tripDays;
         Double odomIn;
         Double odomOut;
+        Double totalEarnings;   // значення з "Total earnings"
+        String tripStatus;      // значення з "Trip status"
 
         boolean isAllNull() {
             return vehicle == null && vehicleName == null && tripStart == null && tripEnd == null
-                    && tripDays == null && odomIn == null && odomOut == null;
+                    && tripDays == null && odomIn == null && odomOut == null
+                    && totalEarnings == null && (tripStatus == null || tripStatus.isBlank());
         }
     }
 
@@ -368,8 +350,13 @@ public class DocumentsUtil {
                 Cell c = header.getCell(i);
                 if (c != null && c.getCellType() == CellType.STRING) {
                     String name = c.getStringCellValue();
-                    if (name != null) col.put(name.trim(), i);
+                    if (name != null) {
+                        String key = name.trim();
+                        col.put(key, i);
+                        col.put(key.toLowerCase(Locale.ROOT), i); // дубль у нижньому регістрі
+                    }
                 }
+
             }
 
             int cVehicle      = req(col, "Vehicle");
@@ -379,6 +366,9 @@ public class DocumentsUtil {
             int cTripDays     = req(col, "Trip days");
             int cOdomIn       = req(col, "Check-in odometer");
             int cOdomOut      = req(col, "Check-out odometer");
+            int cTotalEarnings = req(col, "Total earnings");
+            int cTripStatus    = req(col, "Trip status");
+
 
             List<RowTrip> out = new ArrayList<>();
             for (int r = 1; r <= sheet.getLastRowNum(); r++) { // пропускаємо шапку
@@ -393,6 +383,8 @@ public class DocumentsUtil {
                 t.tripDays    = getInt(row.getCell(cTripDays));
                 t.odomIn      = getDbl(row.getCell(cOdomIn));
                 t.odomOut     = getDbl(row.getCell(cOdomOut));
+                t.totalEarnings = getMoney(row.getCell(cTotalEarnings));
+                t.tripStatus    = getStr(row.getCell(cTripStatus));
 
                 if (t.isAllNull()) continue;
                 out.add(t);
@@ -401,11 +393,137 @@ public class DocumentsUtil {
         }
     }
 
+    // універсальний парсер грошей з будь-яким типом комірки
+    private static Double getMoney(Cell c) {
+        if (c == null) return null;
+
+        try {
+            switch (c.getCellType()) {
+                case NUMERIC -> {
+                    // якщо це дата — не гроші
+                    if (DateUtil.isCellDateFormatted(c)) return null;
+                    return c.getNumericCellValue();
+                }
+                case STRING -> {
+                    String s = c.getStringCellValue();
+                    return parseMoneyString(s);
+                }
+                case FORMULA -> {
+                    // використовуємо кешований тип результату формули
+                    switch (c.getCachedFormulaResultType()) {
+                        case NUMERIC -> {
+                            if (DateUtil.isCellDateFormatted(c)) return null;
+                            return c.getNumericCellValue();
+                        }
+                        case STRING -> {
+                            String s = c.getStringCellValue();
+                            return parseMoneyString(s);
+                        }
+                        default -> { return null; }
+                    }
+                }
+                default -> { return null; }
+            }
+        } catch (Exception ignore) {
+            return null;
+        }
+    }
+
+    // парсить рядок із грошима в double, прибирає символи валюти/пробіли, нормалізує розділювачі
+    private static Double parseMoneyString(String raw) {
+        if (raw == null) return null;
+
+        String s = raw.trim();
+        if (s.isEmpty()) return null;
+
+        // прибрати звичайні та нерозривні пробіли/табуляції
+        s = s.replace("\u00A0", ""); // NBSP
+        s = s.replaceAll("[\\s\\t]", "");
+
+        // обробити бухгалтерські дужки як негатив
+        boolean negByParens = (s.startsWith("(") && s.endsWith(")"));
+        if (negByParens) s = s.substring(1, s.length() - 1);
+
+        // прибрати все, що не цифра/крапка/кома/мінус
+        s = s.replaceAll("[^0-9,.-]", "");
+        if (s.isEmpty() || s.equals("-")) return null;
+
+        // інколи мінус може зустрічатись посередині — нормалізуємо
+        boolean neg = negByParens || s.startsWith("-");
+        s = s.replace("-", ""); // приберемо всі мінуси, потім додамо один спереду якщо треба
+
+        // нормалізація десяткового розділювача до крапки
+        s = normalizeNumberString(s);
+        if (s == null) return null;
+
+        try {
+            double v = Double.parseDouble(s);
+            return neg ? -v : v;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Перетворює рядок виду:
+     *  "1,234.56" -> "1234.56"
+     *  "1.234,56" -> "1234.56"
+     *  "1048,44"  -> "1048.44"
+     *  "1 048,44" -> "1048.44" (пробіли вже зняті вище)
+     *  "1,234"    -> "1234"   (кома як тисячний)
+     *  "1234,5"   -> "1234.5" (кома як десятковий)
+     */
+    private static String normalizeNumberString(String s) {
+        if (s == null || s.isEmpty()) return null;
+
+        boolean hasComma = s.contains(",");
+        boolean hasDot   = s.contains(".");
+
+        if (hasComma && hasDot) {
+            // якщо останній розділювач — кома, вважаємо її десятковою (європейський формат)
+            int lastComma = s.lastIndexOf(',');
+            int lastDot   = s.lastIndexOf('.');
+            if (lastComma > lastDot) {
+                // 1.234.567,89 -> 1234567.89
+                s = s.replace(".", "");
+                s = s.replace(',', '.');
+            } else {
+                // 1,234,567.89 -> 1234567.89
+                s = s.replace(",", "");
+            }
+        } else if (hasComma) {
+            // лише кома: треба вирішити, чи це десятковий чи тисячний
+            int idx = s.lastIndexOf(',');
+            int decimals = s.length() - idx - 1;
+            // якщо після коми 1-2 цифри — трактуємо як десяткову кому
+            if (decimals >= 1 && decimals <= 2) {
+                s = s.replace(',', '.');
+            } else {
+                // інакше це, ймовірно, тисячні розділювачі
+                s = s.replace(",", "");
+            }
+        } else {
+            // лише крапка або взагалі без розділювачів — залишаємо як є
+            // можливий кейс "1.234" (десятковий .) або "1.234.567" (тисячні) — тут не чіпаємо
+            // Java сама впорається з "1234.56" і "1234"
+        }
+
+        // захист від валідності (типу "." або порожнє)
+        if (s.isEmpty() || s.equals("."))
+            return null;
+
+        return s;
+    }
+
+
+
     private static int req(Map<String,Integer> col, String name) {
         Integer i = col.get(name);
+        if (i == null) i = col.get(name.toLowerCase(Locale.ROOT));
         if (i == null) throw new IllegalStateException("Не знайдено колонку: " + name);
         return i;
     }
+
 
     private static String getStr(Cell c) {
         if (c == null) return null;

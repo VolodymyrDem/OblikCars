@@ -1,25 +1,22 @@
+// ======================= REGISTRATION REGISTER =======================
 package com.work.oblikcars.pages.registers.registration;
 
-import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
-import com.work.oblikcars.Utils.DB.DBUtil;
 import com.work.oblikcars.Utils.DB.RegistrationUtil;
 import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
+import com.work.oblikcars.dto.Registers.RegistrationRegister.RegistrationRegisterMappers;
+import com.work.oblikcars.dto.Registers.RegistrationRegister.RegistrationRegisterRowDTO;
 import com.work.oblikcars.model._Car;
-import com.work.oblikcars.model._CarDepreciation;
 import com.work.oblikcars.model._Registration;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.journals.registration.RegistrationCardController;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -28,18 +25,21 @@ import javafx.scene.layout.VBox;
 import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class RegistrationRegisterController extends WindowController {
-    private ObservableList<_Registration> registrations;
+    private ObservableList<RegistrationRegisterRowDTO> rows;
+    private TableView<RegistrationRegisterRowDTO> table;
+
     private MainPage mainPage;
     private RegistrationUtil registrationUtil;
-    private TableView<_Registration> registrationsTable;
+    private CarUtil carUtil;
+
     private VBox tableContainer;
     private Pagination pagination;
-    private CarUtil carUtil;
+    private HBox paginationBar;
     private DatePicker startDate;
     private DatePicker endDate;
     private CheckComboBox<String> carField;
@@ -50,77 +50,72 @@ public class RegistrationRegisterController extends WindowController {
     public void openWindow(){
         String windowTitle = "Реєстр: продовження реєстрації";
         mainPage = MainPage.getInstance();
-
         if(mainPage.checkOpenWindow(windowTitle))return;
 
         registrationUtil = RegistrationUtil.getInstance();
-        registrationsTable = new TableView<>();
-        registrations = FXCollections.observableArrayList();
         carUtil = CarUtil.getInstance();
-        carMap = carUtil.getAllCarComboMap(true);
 
+        rows  = FXCollections.observableArrayList();
+        table = new TableView<>();
+
+        carMap = carUtil.getAllCarComboMap(true);
 
         Label carLabel = new Label("Авто:");
         Label timeLabel = new Label("Період: з ");
         Label timeLabel2 = new Label("по");
+
         Button filterButton = new Button("Застосувати фільтр");
         filterButton.setGraphic(IconsUtil.getFilterIcon());
+        filterButton.getStyleClass().add("uniform-button");
+
         Button saveButton = new Button("Зберегти реєстр");
         saveButton.setGraphic(IconsUtil.getTikIcon());
+        saveButton.getStyleClass().add("uniform-button");
+
         Button settingsButton = new Button();
         settingsButton.setGraphic(IconsUtil.getClockIcon());
+        settingsButton.getStyleClass().add("uniform-button");
+
         startDate = new DatePicker();
         endDate = new DatePicker();
+
         carField = new CheckComboBox<>();
         carField.setPrefWidth(200);
         carField.setMaxWidth(200);
         carField.setMinWidth(200);
         carField.getItems().addAll(carMap.values());
+
         Button toggleCarSelectionBtn = new Button("Всі/Очистити");
         toggleCarSelectionBtn.getStyleClass().add("uniform-button");
-        filterButton.getStyleClass().add("uniform-button");
-        saveButton.getStyleClass().add("uniform-button");
 
         Button updateButton = new Button();
-        updateButton.getStyleClass().add("grey-button");
+        updateButton.getStyleClass().addAll("grey-button", "uniform-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
-
-        filterButton.setOnAction(event -> {
-            updateValues();
-        });
-
-        updateButton.setOnAction(event -> {
-            updateValues();
-        });
-
-        settingsButton.setOnAction(e-> {
-            new PeriodController(
-                    "Реєстр: продовження реєстрації — налаштування періоду",
-                    this::updateDates
-            ).openWindow();
-        });
 
         Button openFolderButton = new Button("Відкрити папку");
         openFolderButton.setGraphic(IconsUtil.getFolderIcon());
-        openFolderButton.getStyleClass().add("grey-button");
-        openFolderButton.setOnAction(e -> {
-            DocumentsUtil.openFolder(7);
-        });
-        openFolderButton.getStyleClass().add("uniform-button");
+        openFolderButton.getStyleClass().addAll("grey-button", "uniform-button");
+        openFolderButton.setOnAction(e -> DocumentsUtil.openFolder(7));
+
+        filterButton.setOnAction(event -> updateValues());
+        updateButton.setOnAction(event -> updateValues());
+
+        settingsButton.setOnAction(e-> new PeriodController(
+                "Реєстр: продовження реєстрації — налаштування періоду",
+                this::updateDates
+        ).openWindow());
 
         saveButton.setOnAction(
                 event -> {
-                    DocumentsUtil util = DocumentsUtil.getInstance();
                     DocumentsUtil.initializeDirectories();
-
-                    String fileName = "Реєстр продовження реєстрації " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
+                    String fileName = "Реєстр продовження реєстрації " +
+                            startDate.getValue().format(dateFormatterFile) + " -- " +
+                            endDate.getValue().format(dateFormatterFile);
 
                     DocumentsUtil.exportTableViewToExcel(
-                            registrationsTable,
-                            new ArrayList<>(registrations), // усі рядки
+                            table, new ArrayList<>(rows),
                             MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
-                            7,
-                            fileName
+                            7, fileName
                     );
                 }
         );
@@ -128,85 +123,59 @@ public class RegistrationRegisterController extends WindowController {
         toggleCarSelectionBtn.setOnAction(e -> {
             var checkModel = carField.getCheckModel();
             if (checkModel.getCheckedItems().isEmpty()) {
-                // якщо нічого не обрано — обираємо всі
                 carField.getItems().forEach(item -> checkModel.check(item));
             } else {
-                // якщо є хоча б один — чистимо вибір
                 checkModel.clearChecks();
             }
         });
 
-        TableColumn<_Registration, String> carCol = new TableColumn<>("Авто");
-        carCol.setCellValueFactory(cellData -> {
-            _Car car = carUtil.getCarById(cellData.getValue().getCarId());
-            String boxString = (car != null) ? car.getBoxString() : "Невідомо";
-            return new ReadOnlyStringWrapper(boxString);
-        });
+        // ----- колонки -----
+        TableColumn<RegistrationRegisterRowDTO, Integer> numCol = new TableColumn<>("№ п.п.");
+        numCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
 
-        TableColumn<_Registration, LocalDate> dateCol = new TableColumn<>("Дата реєстрації");
+        numCol.setMinWidth(40);
+        numCol.setMaxWidth(90);
+        TableColumn<RegistrationRegisterRowDTO, String> carCol = new TableColumn<>("Авто");
+        carCol.setCellValueFactory(new PropertyValueFactory<>("carBox"));
+
+        TableColumn<RegistrationRegisterRowDTO, LocalDate> dateCol = new TableColumn<>("Дата реєстрації");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("registrationDate"));
+        formatDateColumn(dateCol);
 
-
-        TableColumn<_Registration, LocalDate> priceCol = new TableColumn<>("Вартість");
+        TableColumn<RegistrationRegisterRowDTO, Double> priceCol = new TableColumn<>("Вартість");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
+        formatDoubleColumn(priceCol, "#.00");
 
-
-        registrationsTable.getColumns().addAll(carCol, dateCol, priceCol);
-
+        table.getColumns().addAll(numCol, carCol, dateCol, priceCol);
 
         pagination = new Pagination(1, 0);
-        pagination.setPageFactory(this::createPage);
-        enableGlobalSorting(registrationsTable, registrations, pagination);
+        enableGlobalSorting(table, rows, pagination);
+        pagination.setPageFactory(pageIndex -> {
+            Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+            if (r instanceof Runnable rep) rep.run();
+            return new VBox();
+        });
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, table, pagination));
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton, openFolderButton);
-
+        HBox buttonBox = new HBox(
+                10, updateButton, timeLabel, startDate, timeLabel2, endDate,
+                settingsButton, carLabel, carField, toggleCarSelectionBtn,
+                filterButton, saveButton, openFolderButton
+        );
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        registrationsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(registrationsTable, Priority.ALWAYS);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-        tableContainer = new VBox(registrationsTable);
+        tableContainer = new VBox(table);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         updateValues();
 
-        VBox table = new VBox();
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox root = new VBox(buttonBox, tableContainer, new VBox(paginationBar, pagination));
+        VBox.setVgrow(root, Priority.ALWAYS);
 
-        table.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        registrationsTable.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
-
-        mainPage.openInternalWindow(table, windowTitle, true);
-
+        mainPage.openInternalWindow(root, windowTitle, true);
     }
 
     public void updateValues() {
@@ -214,7 +183,6 @@ public class RegistrationRegisterController extends WindowController {
         LocalDate end = endDate.getValue();
 
         List<String> selectedCarNames = carField.getCheckModel().getCheckedItems();
-
         List<Integer> selectedCarIds = carMap.entrySet().stream()
                 .filter(entry -> selectedCarNames.contains(entry.getValue()))
                 .map(Map.Entry::getKey)
@@ -224,58 +192,41 @@ public class RegistrationRegisterController extends WindowController {
             @Override
             protected Void call() {
 
-                List<_Registration> newReg;
-
-                // Перевірка, чи є вибрані carId
+                List<_Registration> data;
                 if (selectedCarIds == null || selectedCarIds.isEmpty()) {
-                    // Якщо жодне авто не вибране, беремо ВСІ carId:
-                    List<Integer> allCarIds = carMap.keySet().stream().toList();
-
-                    // Викликаємо фільтрацію за датами і всіма машинами:
-                    newReg = registrationUtil.getRegistrationsByCarsDates(start, end, allCarIds).stream()
-                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
-                            .toList();
+                    List<Integer> allCarIds = new ArrayList<>(carMap.keySet());
+                    data = registrationUtil.getRegistrationsByCarsDates(start, end, allCarIds);
                 } else {
-                    // Якщо вибрані конкретні авто — фільтруємо за ними
-                    newReg = registrationUtil.getRegistrationsByCarsDates(start, end, selectedCarIds).stream()
-                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
-                            .toList();
+                    data = registrationUtil.getRegistrationsByCarsDates(start, end, selectedCarIds);
+                }
+
+                List<_Registration> sorted = data.stream()
+                        .sorted(Comparator.comparingInt(_Registration::getCarId))
+                        .toList();
+
+                Map<Integer, _Car> carsById = sorted.stream()
+                        .map(_Registration::getCarId)
+                        .distinct()
+                        .collect(Collectors.toMap(id -> id, carUtil::getCarById));
+
+                List<RegistrationRegisterRowDTO> mapped = new ArrayList<>(sorted.size());
+                for (int i = 0; i < sorted.size(); i++) {
+                    _Registration r = sorted.get(i);
+                    _Car car = carsById.get(r.getCarId());
+                    mapped.add(RegistrationRegisterMappers.toDto(r, car, i + 1));
                 }
 
                 Platform.runLater(() -> {
-
-                    registrations.setAll(newReg);
-
-                    int pageCount = (int) Math.ceil((double) registrations.size() / rowsPerPage);
-                    pagination.setPageCount(Math.max(pageCount, 1));
-                    int lastPage = Math.max(pageCount - 1, 0);
-                    pagination.setCurrentPageIndex(lastPage);
-
-                    int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, registrations.size());
-                    registrationsTable.setItems(FXCollections.observableArrayList(registrations.subList(fromIndex, toIndex)));
-
-                    tableContainer.getChildren().setAll(registrationsTable);
-
-                    moveTableDown(registrationsTable);
+                    rows.setAll(mapped);
+                    Object rep = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+                    if (rep instanceof Runnable r) r.run();
+                    tableContainer.getChildren().setAll(table);
+                    moveTableDown(table);
                 });
                 return null;
             }
         };
-        new Thread(task).start();
-    }
-
-    private Node createPage(int pageIndex) {
-        int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, registrations.size());
-
-        if (fromIndex > toIndex) {
-            registrationsTable.setItems(FXCollections.observableArrayList());
-        } else {
-            registrationsTable.setItems(FXCollections.observableArrayList(registrations.subList(fromIndex, toIndex)));
-        }
-
-        return new VBox();
+        new Thread(task, "load-registration-register").start();
     }
 
     public void updateDates(LocalDate start, LocalDate end) {

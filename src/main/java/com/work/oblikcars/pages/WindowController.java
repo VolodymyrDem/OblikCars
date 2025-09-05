@@ -1,7 +1,9 @@
 package com.work.oblikcars.pages;
 
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.SortedList;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
@@ -15,6 +17,7 @@ import javafx.util.StringConverter;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 
@@ -89,18 +92,60 @@ public abstract class WindowController {
             ObservableList<T> masterData,
             Pagination pagination
     ) {
-        table.setSortPolicy(tv -> {
-            Comparator<T> comp = tv.getComparator();
-            if (comp != null) {
-                FXCollections.sort(masterData, comp);
+        // Обгортаємо masterData у SortedList
+        SortedList<T> sorted = new SortedList<>(masterData);
+        sorted.comparatorProperty().bind(table.comparatorProperty());
+
+        Runnable repaginate = () -> {
+            int page = Math.max(0, pagination.getCurrentPageIndex());
+            int from = page * Math.max(1, rowsPerPage);
+            int to   = Math.min(sorted.size(), from + Math.max(1, rowsPerPage));
+            table.setItems(FXCollections.observableArrayList(
+                    (from < to) ? sorted.subList(from, to) : java.util.List.of()
+            ));
+        };
+
+        Runnable recomputeAndRepaginate = () -> {
+            int pageCount = (int) Math.ceil((double) sorted.size() / Math.max(1, rowsPerPage));
+            pagination.setPageCount(Math.max(pageCount, 1));
+            int current = Math.max(0, Math.min(pagination.getCurrentPageIndex(), Math.max(0, pageCount - 1)));
+            if (pagination.getCurrentPageIndex() != current) {
+                pagination.setCurrentPageIndex(current);
             }
-            // оновлюємо поточну сторінку
-            int page = pagination.getCurrentPageIndex();
-            int from = page * rowsPerPage;
-            int to   = Math.min(masterData.size(), from + rowsPerPage);
-            table.setItems(FXCollections.observableArrayList(masterData.subList(from, to)));
-            return true;
+            repaginate.run();
+        };
+
+        // ⚠️ слухаємо тільки comparatorProperty
+        table.comparatorProperty().addListener((obs, o, n) -> repaginate.run());
+
+        // зміна сторінки → відрізаємо новий зріз
+        pagination.currentPageIndexProperty().addListener((obs, o, n) -> repaginate.run());
+
+        // зміни у masterData → оновлюємо кількість сторінок і поточний зріз
+        masterData.addListener((ListChangeListener<T>) c -> recomputeAndRepaginate.run());
+
+        // Початковий виклик
+        recomputeAndRepaginate.run();
+
+        // зберігаємо repaginate для buildDefaultPaginator
+        table.getProperties().put("GLOBAL_SORTED_REPAGINATE", recomputeAndRepaginate);
+    }
+
+
+    protected <S> void formatDateColumn(TableColumn<S, LocalDate> column) {
+        column.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(LocalDate value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty || value == null) {
+                    setText(null);
+                } else {
+                    setText(dateFormatterFile.format(value));
+                }
+            }
         });
+        // comparator для LocalDate і так naturalOrder; лишаю на випадок явної установки
+        column.setComparator(Comparator.naturalOrder());
     }
 
     protected HBox createPaginationBar(Pagination pagination, Runnable onPageOrSizeChanged) {
@@ -180,7 +225,15 @@ public abstract class WindowController {
         return bar;
     }
 
+    @SuppressWarnings("unchecked")
     protected <T> Runnable buildDefaultPaginator(ObservableList<T> masterData, TableView<T> table, Pagination pagination) {
+        // Якщо увімкнули глобальне сортування — використовуй його репагінатор
+        Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+        if (r instanceof Runnable globalRepaginate) {
+            return globalRepaginate;
+        }
+
+        // Інакше — базова (несортована) версія
         return () -> {
             int pageCount = (int) Math.ceil((double) masterData.size() / Math.max(1, rowsPerPage));
             pagination.setPageCount(Math.max(pageCount, 1));
@@ -188,7 +241,10 @@ public abstract class WindowController {
             pagination.setCurrentPageIndex(current);
             int from = current * rowsPerPage;
             int to = Math.min(from + rowsPerPage, masterData.size());
-            table.setItems(FXCollections.observableArrayList(from < to ? masterData.subList(from, to) : java.util.List.of()));
+            table.setItems(FXCollections.observableArrayList(
+                    from < to ? masterData.subList(from, to) : java.util.List.of()
+            ));
         };
     }
+
 }

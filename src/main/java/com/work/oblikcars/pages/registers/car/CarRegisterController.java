@@ -1,18 +1,17 @@
+// ======================= CAR REGISTER =======================
 package com.work.oblikcars.pages.registers.car;
+
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
-import com.work.oblikcars.model.CarReportRow;
-import com.work.oblikcars.model._List;
+import com.work.oblikcars.dto.Registers.CarRegister.CarReportDTO;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
 import javafx.application.Platform;
-import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -21,233 +20,173 @@ import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
 import java.time.format.TextStyle;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class CarRegisterController extends WindowController {
-    private ObservableList<CarReportRow> rows;
+    private ObservableList<CarReportDTO> rows;
     private Pagination pagination;
     private HBox paginationBar;
     private DatePicker reportDatePicker;
     private CarUtil carUtil;
-    private TableView<CarReportRow> carReportTable;
+    private TableView<CarReportDTO> table;
     private VBox tableContainer;
 
-    public CarRegisterController() {
-    }
+    public CarRegisterController() {}
+
     public void openWindow() {
         String windowTitle = "Реєстр: авто";
         MainPage mainPage = MainPage.getInstance();
         if (mainPage.checkOpenWindow(windowTitle)) return;
+
         carUtil = CarUtil.getInstance();
         reportDatePicker = new DatePicker(LocalDate.now());
-        carReportTable = new  TableView<>();
+        table = new TableView<>();
         rows = FXCollections.observableArrayList();
+
         CheckBox showRentDateCheck = new CheckBox("Показати дату передачі в рент");
         showRentDateCheck.setSelected(true);
+
         Label dateLabel = new Label("Дата: ");
+
         Button saveButton = new Button("Зберегти реєстр");
         saveButton.setGraphic(IconsUtil.getTikIcon());
         saveButton.getStyleClass().add("uniform-button");
+
         Button updateButton = new Button();
+        updateButton.getStyleClass().addAll("grey-button", "uniform-button");
+        updateButton.setGraphic(IconsUtil.getUpdateIcon());
+
         Button filterButton = new Button("Застосувати фільтр");
         filterButton.setGraphic(IconsUtil.getFilterIcon());
-        updateButton.getStyleClass().add("grey-button");
-        updateButton.setGraphic(IconsUtil.getUpdateIcon());
-        updateButton.getStyleClass().add("uniform-button");
         filterButton.getStyleClass().add("uniform-button");
 
-        filterButton.setOnAction(event -> {
-            updateValues();
-        });
+        filterButton.setOnAction(e -> updateValues());
+        updateButton.setOnAction(e -> updateValues());
 
-        updateButton.setOnAction(event -> {
-            updateValues();
-        });
+        // ---- Колонки (DTO) ----
+        TableColumn<CarReportDTO, Integer> numCol = new TableColumn<>("№ п.п.");
+        numCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
+        numCol.setMinWidth(40);
+        numCol.setMaxWidth(90);
 
-        TableColumn<CarReportRow, Number> idxCol = new TableColumn<>("№");
-        idxCol.setCellValueFactory(new PropertyValueFactory<>("index"));
-        idxCol.setMaxWidth(50);
-
-        TableColumn<CarReportRow, String> modelCol = new TableColumn<>("Модель");
+        TableColumn<CarReportDTO, String> modelCol = new TableColumn<>("Модель");
         modelCol.setCellValueFactory(new PropertyValueFactory<>("model"));
 
-        TableColumn<CarReportRow, String> colorCol = new TableColumn<>("Колір");
+        TableColumn<CarReportDTO, String> colorCol = new TableColumn<>("Колір");
         colorCol.setCellValueFactory(new PropertyValueFactory<>("color"));
 
-        TableColumn<CarReportRow, String> numberCol = new TableColumn<>("Номер");
+        TableColumn<CarReportDTO, String> numberCol = new TableColumn<>("Номер");
         numberCol.setCellValueFactory(new PropertyValueFactory<>("number"));
 
-        TableColumn<CarReportRow, Number> yearCol = new TableColumn<>("Рік випуску");
+        TableColumn<CarReportDTO, Integer> yearCol = new TableColumn<>("Рік випуску");
         yearCol.setCellValueFactory(new PropertyValueFactory<>("year"));
 
-        TableColumn<CarReportRow, Number> priceCol = new TableColumn<>("Вартість купівлі");
+        TableColumn<CarReportDTO, Double> priceCol = new TableColumn<>("Вартість купівлі");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
+        formatDoubleColumn(priceCol, "#,##0.00");
 
-        TableColumn<CarReportRow, String> rentedCol = new TableColumn<>("Переданий в рент");
+        TableColumn<CarReportDTO, String> rentedCol = new TableColumn<>("Переданий в рент");
         rentedCol.setCellValueFactory(new PropertyValueFactory<>("rented"));
 
-        TableColumn<CarReportRow, LocalDate> purchaseDateCol = new TableColumn<>("Дата купівлі");
+        TableColumn<CarReportDTO, LocalDate> purchaseDateCol = new TableColumn<>("Дата купівлі");
         purchaseDateCol.setCellValueFactory(new PropertyValueFactory<>("purchaseDate"));
+        formatDateColumn(purchaseDateCol);
 
-
-        TableColumn<CarReportRow, LocalDate> rentCol = new TableColumn<>("Місяць та рік передачі в рент");
-        rentCol.setCellValueFactory(
-                cell -> cell.getValue().rentDateProperty()
-        );
-
-        rentCol.setCellFactory(col -> new TableCell<CarReportRow, LocalDate>() {
-            @Override
-            protected void updateItem(LocalDate date, boolean empty) {
+        TableColumn<CarReportDTO, LocalDate> rentCol = new TableColumn<>("Місяць та рік передачі в рент");
+        rentCol.setCellValueFactory(new PropertyValueFactory<>("rentDate"));
+        rentCol.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
-                if (empty || date == null) {
-                    setText(null);
-                } else {
-                    String monthName = date.getMonth()
-                            .getDisplayName(TextStyle.FULL_STANDALONE, new Locale("uk"));
+                if (empty || date == null) { setText(null); }
+                else {
+                    String monthName = date.getMonth().getDisplayName(TextStyle.FULL_STANDALONE, new Locale("uk"));
                     setText(monthName + " " + date.getYear());
                 }
             }
         });
-
-
-        TableColumn<CarReportRow, Number> mileageCol = new TableColumn<>("Загальний пробіг у ренті");
-        mileageCol.setCellValueFactory(new PropertyValueFactory<>("mileage"));
-
-        TableColumn<CarReportRow, Number> odometrCol = new TableColumn<>("Останній показник одометра");
-        odometrCol.setCellValueFactory(new PropertyValueFactory<>("Odometr"));
-
-
-        TableColumn<CarReportRow, Number> firstRegcol = new TableColumn<>("Вартість першої реєстрації");
-        firstRegcol.setCellValueFactory(new PropertyValueFactory<>("firstReg"));
-
-        TableColumn<CarReportRow, Number> transportPriceCol = new TableColumn<>("Вартість транспортування");
-        transportPriceCol.setCellValueFactory(new PropertyValueFactory<>("transportPrice"));
-
-        TableColumn<CarReportRow, Number> totalPriceCol = new TableColumn<>("Інвестиційна вартість");
-        totalPriceCol.setCellValueFactory(new PropertyValueFactory<>("totalPrice"));
-
-// 3) Після того, як створили rentCol, звʼяжіть видимість:
         rentCol.visibleProperty().bind(showRentDateCheck.selectedProperty());
 
-        carReportTable.getColumns().addAll(
-                idxCol, modelCol, colorCol, numberCol, purchaseDateCol,
-                yearCol, rentedCol, rentCol, mileageCol, odometrCol, priceCol, firstRegcol, transportPriceCol, totalPriceCol
+        TableColumn<CarReportDTO, Double> mileageCol = new TableColumn<>("Загальний пробіг у ренті");
+        mileageCol.setCellValueFactory(new PropertyValueFactory<>("mileage"));
+        formatDoubleColumn(mileageCol, "#,##0.##");
+
+        TableColumn<CarReportDTO, Double> odometerCol = new TableColumn<>("Останній показник одометра");
+        odometerCol.setCellValueFactory(new PropertyValueFactory<>("odometer"));
+        formatDoubleColumn(odometerCol, "#,##0.##");
+
+        TableColumn<CarReportDTO, Double> firstRegCol = new TableColumn<>("Вартість першої реєстрації");
+        firstRegCol.setCellValueFactory(new PropertyValueFactory<>("firstReg"));
+        formatDoubleColumn(firstRegCol, "#,##0.00");
+
+        TableColumn<CarReportDTO, Double> transportPriceCol = new TableColumn<>("Вартість транспортування");
+        transportPriceCol.setCellValueFactory(new PropertyValueFactory<>("transportPrice"));
+        formatDoubleColumn(transportPriceCol, "#,##0.00");
+
+        TableColumn<CarReportDTO, Double> totalPriceCol = new TableColumn<>("Інвестиційна вартість");
+        totalPriceCol.setCellValueFactory(new PropertyValueFactory<>("totalPrice"));
+        formatDoubleColumn(totalPriceCol, "#,##0.00");
+
+        table.getColumns().addAll(
+                numCol, modelCol, colorCol, numberCol, purchaseDateCol,
+                yearCol, rentedCol, rentCol, mileageCol, odometerCol,
+                priceCol, firstRegCol, transportPriceCol, totalPriceCol
         );
 
+        // --- Пагінація + глобальне сортування
         pagination = new Pagination(1, 0);
-        pagination.setPageFactory(this::createPage);
+        enableGlobalSorting(table, rows, pagination);
+        pagination.setPageFactory(pageIndex -> {
+            Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+            if (r instanceof Runnable rep) rep.run();
+            return new VBox();
+        });
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, table, pagination));
 
-        enableGlobalSorting(carReportTable, rows, pagination);
-        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, carReportTable, pagination));
-
-
-
-        HBox buttonBox = new HBox(10,updateButton, dateLabel, reportDatePicker,showRentDateCheck, filterButton, saveButton);
+        HBox buttonBox = new HBox(10, updateButton, dateLabel, reportDatePicker, showRentDateCheck, filterButton, saveButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        carReportTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(carReportTable, Priority.ALWAYS);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-        tableContainer = new VBox(carReportTable);
+        tableContainer = new VBox(table);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         updateValues();
 
-        VBox table = new VBox();
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox root = new VBox(buttonBox, tableContainer, new VBox(paginationBar, pagination));
+        VBox.setVgrow(root, Priority.ALWAYS);
 
-        table.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
+        saveButton.setOnAction(event -> {
+            DocumentsUtil.initializeDirectories();
+            String fileName = "Реєстр авто " + reportDatePicker.getValue().format(dateFormatterFile);
+            DocumentsUtil.exportTableViewToExcel(
+                    table,
+                    new ArrayList<>(rows),
+                    MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                    4,
+                    fileName
+            );
         });
 
-        carReportTable.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        saveButton.setOnAction(
-                event -> {
-                    DocumentsUtil util = DocumentsUtil.getInstance();
-                    DocumentsUtil.initializeDirectories();
-
-                    String fileName = "Реєстр авто " + reportDatePicker.getValue().format(dateFormatterFile);
-
-                    DocumentsUtil.exportTableViewToExcel(
-                            carReportTable,
-                            new ArrayList<>(rows), // усі рядки
-                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
-                            4,
-                            fileName
-                    );
-                }
-        );
-
-        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
-        mainPage.openInternalWindow(table, windowTitle, true);
-
+        mainPage.openInternalWindow(root, windowTitle, true);
     }
-
 
     public void updateValues() {
         Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() {
-
-                List<CarReportRow> newReports = carUtil.getCarReportRows(reportDatePicker.getValue());
-
+            @Override protected Void call() {
+                List<CarReportDTO> fresh = carUtil.getCarReportRowsDTO(reportDatePicker.getValue());
                 Platform.runLater(() -> {
-                    rows.setAll(newReports);
-
-                    int pageCount = (int) Math.ceil((double) rows.size() / rowsPerPage);
-                    pagination.setPageCount(Math.max(pageCount, 1));
-                    int lastPage = Math.max(pageCount - 1, 0);
-                    pagination.setCurrentPageIndex(lastPage);
-
-                    int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, rows.size());
-                    carReportTable.setItems(FXCollections.observableArrayList(rows.subList(fromIndex, toIndex)));
-
-                    tableContainer.getChildren().setAll(carReportTable);
-
-                    moveTableDown(carReportTable);
+                    rows.setAll(fresh);
+                    Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+                    if (r instanceof Runnable rep) rep.run();
+                    tableContainer.getChildren().setAll(table);
+                    moveTableDown(table);
                 });
                 return null;
             }
         };
-        new Thread(task).start();
-    }
-
-    private Node createPage(int pageIndex) {
-        int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, rows.size());
-
-        if (fromIndex > toIndex) {
-            carReportTable.setItems(FXCollections.observableArrayList());
-        } else {
-            carReportTable.setItems(FXCollections.observableArrayList(rows.subList(fromIndex, toIndex)));
-        }
-
-        return new VBox();
+        new Thread(task, "load-car-register").start();
     }
 }

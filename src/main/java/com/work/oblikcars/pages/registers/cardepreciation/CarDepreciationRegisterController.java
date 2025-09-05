@@ -1,25 +1,21 @@
+// ======================= CAR DEPRECIATION REGISTER =======================
 package com.work.oblikcars.pages.registers.cardepreciation;
 
-import com.work.oblikcars.Utils.AlertsUtil;
 import com.work.oblikcars.Utils.DB.CarDepreciationUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
-import com.work.oblikcars.Utils.DB.DBUtil;
 import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
-import com.work.oblikcars.model._Car;
+import com.work.oblikcars.dto.Registers.CarDepreciationRegister.CarDepreciationMappers;
+import com.work.oblikcars.dto.Registers.CarDepreciationRegister.CarDepreciationRowDTO;
 import com.work.oblikcars.model._CarDepreciation;
-import com.work.oblikcars.model._Inspection;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.journals.cardepreciation.CarDepreciationCardController;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -33,250 +29,186 @@ import java.util.List;
 import java.util.Map;
 
 public class CarDepreciationRegisterController extends WindowController {
-    private ObservableList<_CarDepreciation> depreciations;
+    private ObservableList<CarDepreciationRowDTO> rows;
     private MainPage mainPage;
     private CarUtil carUtil;
     private CarDepreciationUtil carDepreciationUtil;
-    private TableView<_CarDepreciation> carDepreciationTable;
+    private TableView<CarDepreciationRowDTO> table;
     private VBox tableContainer;
     private Pagination pagination;
     private HBox paginationBar;
     private DatePicker startDate;
     private DatePicker endDate;
     private CheckComboBox<String> carField;
-    Map<Integer, String> carMap;
+    private Map<Integer, String> carMap;
 
-
-    public CarDepreciationRegisterController() {
-    }
+    public CarDepreciationRegisterController() {}
 
     public void openWindow() {
         String windowTitle = "Реєстр: справедлива вартість авто";
         mainPage = MainPage.getInstance();
-
-        if(mainPage.checkOpenWindow(windowTitle)) return ;
+        if (mainPage.checkOpenWindow(windowTitle)) return;
 
         carDepreciationUtil = CarDepreciationUtil.getInstance();
-        carDepreciationTable = new TableView<>();
-        depreciations = FXCollections.observableArrayList();
         carUtil = CarUtil.getInstance();
+
+        table = new TableView<>();
+        rows = FXCollections.observableArrayList();
         carMap = carUtil.getAllCarComboMap(true);
 
         Label carLabel = new Label("Авто: ");
         Label timeLabel = new Label("Період: з ");
         Label timeLabel2 = new Label("по");
+
         Button filterButton = new Button("Застосувати фільтр");
         filterButton.setGraphic(IconsUtil.getFilterIcon());
+        filterButton.getStyleClass().add("uniform-button");
+
         Button saveButton = new Button("Зберегти реєстр");
         saveButton.setGraphic(IconsUtil.getTikIcon());
+        saveButton.getStyleClass().add("uniform-button");
+
         Button settingsButton = new Button();
         settingsButton.setGraphic(IconsUtil.getClockIcon());
-        startDate = new DatePicker();
-        endDate = new DatePicker();
-        carField = new CheckComboBox<>();
-        carField.setPrefWidth(200);
-        carField.setMaxWidth(200);
-        carField.setMinWidth(200);
-        carField.getItems().addAll(carMap.values());
-        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
-        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
-        filterButton.getStyleClass().add("uniform-button");
-        saveButton.getStyleClass().add("uniform-button");
+        settingsButton.getStyleClass().add("uniform-button");
+
         Button openFolderButton = new Button("Відкрити папку");
         openFolderButton.setGraphic(IconsUtil.getFolderIcon());
-        openFolderButton.getStyleClass().add("grey-button");
-        openFolderButton.setOnAction(e -> {
-            DocumentsUtil.openFolder(2);
-        });
-        openFolderButton.getStyleClass().add("uniform-button");
+        openFolderButton.getStyleClass().addAll("grey-button", "uniform-button");
+        openFolderButton.setOnAction(e -> DocumentsUtil.openFolder(2));
+
         Button updateButton = new Button();
-        updateButton.getStyleClass().add("grey-button");
+        updateButton.getStyleClass().addAll("grey-button", "uniform-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
 
-        filterButton.setOnAction(event -> {
-            updateValues();
-        });
+        startDate = new DatePicker();
+        endDate = new DatePicker();
 
-        updateButton.setOnAction(event -> {
-            updateValues();
-        });
+        carField = new CheckComboBox<>();
+        carField.setPrefWidth(200);
+        carField.getItems().addAll(carMap.values());
 
-        saveButton.setOnAction(
-                event -> {
-                    DocumentsUtil util = DocumentsUtil.getInstance();
-                    DocumentsUtil.initializeDirectories();
-
-                    String fileName = "Реєстр справедлива вартість авто " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
-
-                    DocumentsUtil.exportTableViewToExcel(
-                            carDepreciationTable,
-                            new ArrayList<>(depreciations), // усі рядки
-                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
-                            2,
-                            fileName
-                    );
-                }
-        );
-
-        settingsButton.setOnAction(e-> {
-            new PeriodController(
-                    "Реєстр: справедлива вартість авто — налаштування періоду",
-                    this::updateDates
-            ).openWindow();
-        });
-
+        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
+        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
         toggleCarSelectionBtn.setOnAction(e -> {
-            var checkModel = carField.getCheckModel();
-            if (checkModel.getCheckedItems().isEmpty()) {
-                // якщо нічого не обрано — обираємо всі
-                carField.getItems().forEach(item -> checkModel.check(item));
-            } else {
-                // якщо є хоча б один — чистимо вибір
-                checkModel.clearChecks();
-            }
+            var m = carField.getCheckModel();
+            if (m.getCheckedItems().isEmpty()) carField.getItems().forEach(m::check);
+            else m.clearChecks();
         });
 
+        filterButton.setOnAction(e -> updateValues());
+        updateButton.setOnAction(e -> updateValues());
 
-        TableColumn<_CarDepreciation, String> carCol = new TableColumn<>("Авто");
-        carCol.setCellValueFactory(cellData -> {
-            _Car car = carUtil.getCarById(cellData.getValue().getCarId());
-            String boxString = (car != null) ? car.getBoxString() : "Невідомо";
-            return new ReadOnlyStringWrapper(boxString);
+        saveButton.setOnAction(e -> {
+            DocumentsUtil.initializeDirectories();
+            String fileName = "Реєстр справедлива вартість авто "
+                    + startDate.getValue().format(dateFormatterFile)
+                    + " -- "
+                    + endDate.getValue().format(dateFormatterFile);
+            DocumentsUtil.exportTableViewToExcel(
+                    table, new ArrayList<>(rows),
+                    MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                    2, fileName
+            );
         });
 
-        TableColumn<_CarDepreciation, LocalDate> dateCol = new TableColumn<>("Дата");
+        settingsButton.setOnAction(e -> new PeriodController(
+                "Реєстр: справедлива вартість авто — налаштування періоду",
+                this::updateDates
+        ).openWindow());
+
+        // --- КОЛОНКИ ---
+        TableColumn<CarDepreciationRowDTO, Integer> numCol = new TableColumn<>("№ п.п.");
+        numCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
+
+        numCol.setMinWidth(40);
+        numCol.setMaxWidth(90);
+        TableColumn<CarDepreciationRowDTO, String> carCol = new TableColumn<>("Авто");
+        carCol.setCellValueFactory(new PropertyValueFactory<>("car"));
+
+        TableColumn<CarDepreciationRowDTO, LocalDate> dateCol = new TableColumn<>("Дата");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
+        formatDateColumn(dateCol);
 
-        TableColumn<_CarDepreciation, LocalDate> priceCol = new TableColumn<>("Вартість");
+        TableColumn<CarDepreciationRowDTO, Double> priceCol = new TableColumn<>("Вартість");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
+        formatDoubleColumn(priceCol, "#.00");
 
-        TableColumn<_CarDepreciation, LocalDate> descriptionCol = new TableColumn<>("Опис");
+        TableColumn<CarDepreciationRowDTO, String> descriptionCol = new TableColumn<>("Опис");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        carDepreciationTable.getColumns().addAll(carCol, dateCol, priceCol, descriptionCol);
-
+        table.getColumns().addAll(numCol, carCol, dateCol, priceCol, descriptionCol);
 
         pagination = new Pagination(1, 0);
-        pagination.setPageFactory(this::createPage);
-        enableGlobalSorting(carDepreciationTable, depreciations, pagination);
-        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(depreciations, carDepreciationTable, pagination));
+        enableGlobalSorting(table, rows, pagination);
+        pagination.setPageFactory(pageIndex -> {
+            Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+            if (r instanceof Runnable rep) rep.run();
+            return new VBox();
+        });
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, table, pagination));
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton, openFolderButton);
+        HBox buttonBox = new HBox(
+                10, updateButton, timeLabel, startDate, timeLabel2, endDate,
+                settingsButton, carLabel, carField, toggleCarSelectionBtn, filterButton, saveButton, openFolderButton
+        );
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        carDepreciationTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(carDepreciationTable, Priority.ALWAYS);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-        tableContainer = new VBox(carDepreciationTable);
+        tableContainer = new VBox(table);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         updateValues();
 
-        VBox table = new VBox();
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox root = new VBox(buttonBox, tableContainer, new VBox(paginationBar, pagination));
+        VBox.setVgrow(root, Priority.ALWAYS);
 
-        table.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        carDepreciationTable.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        table.getChildren().addAll(buttonBox, tableContainer, new VBox(paginationBar, pagination));
-
-        mainPage.openInternalWindow(table, windowTitle, true);
-
+        mainPage.openInternalWindow(root, windowTitle, true);
     }
 
     public void updateValues() {
         Task<Void> task = new Task<>() {
-            LocalDate start = startDate.getValue();
-            LocalDate end = endDate.getValue();
-
-            List<String> selectedCarNames = carField.getCheckModel().getCheckedItems();
-
-            List<Integer> selectedCarIds = carMap.entrySet().stream()
-                    .filter(entry -> selectedCarNames.contains(entry.getValue()))
-                    .map(Map.Entry::getKey)
-                    .toList();
-
             @Override
             protected Void call() {
-                List<_CarDepreciation> newItems;
+                LocalDate start = startDate.getValue();
+                LocalDate end   = endDate.getValue();
 
-                // Перевірка, чи є вибрані carId
-                if (selectedCarIds == null || selectedCarIds.isEmpty()) {
-                    // Якщо жодне авто не вибране, беремо ВСІ carId:
-                    List<Integer> allCarIds = carMap.keySet().stream().toList();
+                List<String> selectedCarNames = carField.getCheckModel().getCheckedItems();
+                List<Integer> selectedCarIds = carMap.entrySet().stream()
+                        .filter(e -> selectedCarNames.contains(e.getValue()))
+                        .map(Map.Entry::getKey)
+                        .toList();
 
-                    // Викликаємо фільтрацію за датами і всіма машинами:
-                    newItems = carDepreciationUtil.getDepreciationsByCarsDates(start, end, allCarIds).stream()
-                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
-                            .toList();
-                } else {
-                    // Якщо вибрані конкретні авто — фільтруємо за ними
-                    newItems = carDepreciationUtil.getDepreciationsByCarsDates(start, end, selectedCarIds).stream()
-                            .sorted((c1, c2) -> Integer.compare(c1.getCarId(), c2.getCarId()))
-                            .toList();
+                List<Integer> carIdsToQuery =
+                        (selectedCarIds == null || selectedCarIds.isEmpty())
+                                ? carMap.keySet().stream().toList()
+                                : selectedCarIds;
+
+                List<_CarDepreciation> raw = carDepreciationUtil
+                        .getDepreciationsByCarsDates(start, end, carIdsToQuery)
+                        .stream()
+                        .sorted((a, b) -> Integer.compare(a.getCarId(), b.getCarId()))
+                        .toList();
+
+                List<CarDepreciationRowDTO> dtos = new ArrayList<>(raw.size());
+                for (int i = 0; i < raw.size(); i++) {
+                    var e = raw.get(i);
+                    dtos.add(CarDepreciationMappers.toDto(e, carMap.get(e.getCarId()), i + 1)); // rowNo тут
                 }
 
-
                 Platform.runLater(() -> {
-                    depreciations.setAll(newItems);
-
-                    int pageCount = (int) Math.ceil((double) depreciations.size() / rowsPerPage);
-                    pagination.setPageCount(Math.max(pageCount, 1));
-                    int lastPage = Math.max(pageCount - 1, 0);
-                    pagination.setCurrentPageIndex(lastPage);
-
-                    int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, depreciations.size());
-                    carDepreciationTable.setItems(FXCollections.observableArrayList(depreciations.subList(fromIndex, toIndex)));
-
-                    tableContainer.getChildren().setAll(carDepreciationTable);
-
-                    moveTableDown(carDepreciationTable);
+                    rows.setAll(dtos);
+                    Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+                    if (r instanceof Runnable rep) rep.run();
+                    tableContainer.getChildren().setAll(table);
+                    moveTableDown(table);
                 });
                 return null;
             }
         };
-        new Thread(task).start();
-    }
-
-    private Node createPage(int pageIndex) {
-        int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, depreciations.size());
-
-        if (fromIndex > toIndex) {
-            carDepreciationTable.setItems(FXCollections.observableArrayList());
-        } else {
-            carDepreciationTable.setItems(FXCollections.observableArrayList(depreciations.subList(fromIndex, toIndex)));
-        }
-
-        return new VBox();
+        new Thread(task, "load-car-depreciation-register").start();
     }
 
     public void updateDates(LocalDate start, LocalDate end) {

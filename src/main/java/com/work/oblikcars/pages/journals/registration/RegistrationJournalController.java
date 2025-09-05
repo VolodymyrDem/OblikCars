@@ -1,19 +1,16 @@
 package com.work.oblikcars.pages.journals.registration;
 
 import com.work.oblikcars.Utils.AlertsUtil;
-import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.DBUtil;
-import com.work.oblikcars.Utils.DB.ListUtil;
 import com.work.oblikcars.Utils.DB.RegistrationUtil;
 import com.work.oblikcars.Utils.IconsUtil;
-import com.work.oblikcars.model._Car;
-import com.work.oblikcars.model._List;
+import com.work.oblikcars.dto.Journals.ListJournal.ListRowDTO;
+import com.work.oblikcars.dto.Journals.RegistrationJournal.RegistrationMappers;
+import com.work.oblikcars.dto.Journals.RegistrationJournal.RegistrationRowDTO;
 import com.work.oblikcars.model._Registration;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
-import com.work.oblikcars.pages.journals.list.ListCardController;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -26,221 +23,179 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class RegistrationJournalController extends WindowController {
-    private ObservableList<_Registration> registrations;
+    private ObservableList<RegistrationRowDTO> rows;
     private MainPage mainPage;
     private RegistrationUtil registrationUtil;
-    private TableView<_Registration> registrationsTable;
+    private TableView<RegistrationRowDTO> table;
     private VBox tableContainer;
     private Pagination pagination;
     private HBox paginationBar;
-    private CarUtil carUtil;
 
     public RegistrationJournalController(){}
 
     public void openWindow(){
         String windowTitle = "Журнал: продовження реєстрації";
         mainPage = MainPage.getInstance();
-
-        if(mainPage.checkOpenWindow(windowTitle))return;
+        if (mainPage.checkOpenWindow(windowTitle)) return;
 
         registrationUtil = RegistrationUtil.getInstance();
-        registrationsTable = new TableView<>();
-        registrations = FXCollections.observableArrayList();
-        carUtil = CarUtil.getInstance();
-
+        table = new TableView<>();
+        rows  = FXCollections.observableArrayList();
 
         Button addButton = new Button("Додати реєстрацію");
         addButton.setGraphic(IconsUtil.getPlusIcon());
-        addButton.getStyleClass().add("green-button");
+        addButton.getStyleClass().addAll("green-button", "uniform-button");
 
         Button editButton = new Button("Редагувати реєстрацію");
         editButton.setGraphic(IconsUtil.getPencilIcon());
         editButton.setDisable(true);
-        editButton.getStyleClass().add("yellow-button");
+        editButton.getStyleClass().addAll("yellow-button", "uniform-button");
 
-        Button DeleteButton = new Button("Видалити реєстрацію");
-        DeleteButton.setGraphic(IconsUtil.getRubbishIcon());
-        DeleteButton.setDisable(true);
-        DeleteButton.getStyleClass().add("red-button");
+        Button deleteBtn = new Button("Видалити реєстрацію");
+        deleteBtn.setGraphic(IconsUtil.getRubbishIcon());
+        deleteBtn.setDisable(true);
+        deleteBtn.getStyleClass().addAll("red-button", "uniform-button");
 
         Button updateButton = new Button();
-        updateButton.getStyleClass().add("grey-button");
+        updateButton.getStyleClass().addAll("grey-button", "uniform-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
 
         Button syncButton = new Button("Синхронізація першої реєстрації");
-        syncButton.getStyleClass().add("grey-button");
+        syncButton.getStyleClass().addAll("grey-button", "uniform-button");
         syncButton.setGraphic(IconsUtil.getUpdateIcon());
 
-        addButton.getStyleClass().add("uniform-button");
-        editButton.getStyleClass().add("uniform-button");
-        DeleteButton.getStyleClass().add("uniform-button");
-        updateButton.getStyleClass().add("uniform-button");
-        syncButton.getStyleClass().add("uniform-button");
+        // --- Колонки по DTO
+        TableColumn<RegistrationRowDTO, Number> rowNoCol = new TableColumn<>("№");
+        rowNoCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
+        rowNoCol.setMinWidth(40);
+        rowNoCol.setMaxWidth(90);
 
-        TableColumn<_Registration, String> carCol = new TableColumn<>("Авто");
-        carCol.setCellValueFactory(cellData -> {
-            _Car car = carUtil.getCarById(cellData.getValue().getCarId());
-            String boxString = (car != null) ? car.getBoxString() : "Невідомо";
-            return new ReadOnlyStringWrapper(boxString);
-        });
+        TableColumn<RegistrationRowDTO, String> carCol = new TableColumn<>("Авто");
+        carCol.setCellValueFactory(new PropertyValueFactory<>("carBox"));
 
-        TableColumn<_Registration, LocalDate> dateCol = new TableColumn<>("Дата реєстрації");
+        TableColumn<RegistrationRowDTO, LocalDate> dateCol = new TableColumn<>("Дата реєстрації");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("registrationDate"));
+        formatDateColumn(dateCol); // укр. формат, тип лишається LocalDate
 
-
-        TableColumn<_Registration, LocalDate> priceCol = new TableColumn<>("Вартість");
+        TableColumn<RegistrationRowDTO, Double> priceCol = new TableColumn<>("Вартість");
         priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
+        formatDoubleColumn(priceCol, "#,##0.00");
 
+        table.getColumns().addAll(rowNoCol, carCol, dateCol, priceCol);
 
-        registrationsTable.getColumns().addAll(carCol, dateCol, priceCol);
-
-        registrationsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            boolean isItemSelected = newSelection != null;
-            editButton.setDisable(!isItemSelected);
-            DeleteButton.setDisable(!isItemSelected);
-
+        // селекшн
+        table.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> {
+            boolean sel = n != null;
+            editButton.setDisable(!sel);
+            deleteBtn.setDisable(!sel);
         });
 
         editButton.setOnAction(e -> {
-            _Registration selectedReg = registrationsTable.getSelectionModel().getSelectedItem();
-            if (selectedReg != null) {
-                RegistrationCardController controller = new RegistrationCardController();
-                controller.openWindow(this, selectedReg, false);
+            RegistrationRowDTO dto = table.getSelectionModel().getSelectedItem();
+            if (dto != null) {
+                // якщо потрібна форма — відкрий на основі ентіті
+                _Registration entity = registrationUtil.getAllRegistrations().stream()
+                        .filter(x -> x.getId() == dto.getId()).findFirst().orElse(null);
+                if (entity != null) {
+                    RegistrationCardController controller = new RegistrationCardController();
+                    controller.openWindow(this, entity, false);
+                }
             }
         });
 
-        updateButton.setOnAction(e->{
-            updateValues();
-        });
-
-        syncButton.setOnAction(e->{
-            registrationUtil.syncFirstRegistrationWithCars();
-        });
+        updateButton.setOnAction(e -> updateValues());
+        syncButton.setOnAction(e -> registrationUtil.syncFirstRegistrationWithCars());
 
         addButton.setOnAction(e -> {
             RegistrationCardController controller = new RegistrationCardController();
             controller.openWindow(this, null, false);
         });
 
-        DeleteButton.setOnAction(e->{
-            _Registration selectedReg = registrationsTable.getSelectionModel().getSelectedItem();
-            if (selectedReg != null) {
+        deleteBtn.setOnAction(e -> {
+            RegistrationRowDTO dto = table.getSelectionModel().getSelectedItem();
+            if (dto != null) {
                 Alert confirmationAlert = AlertsUtil.ConfirmAlert("Підтвердіть операцію", "Видалити реєстрацію");
                 confirmationAlert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
-                        registrationUtil.deleteRegistration(selectedReg);
+                        _Registration entity = new _Registration();
+                        entity.setId(dto.getId());
+                        registrationUtil.deleteRegistration(entity);
                         updateValues();
                     }
                 });
-
             }
         });
 
         pagination = new Pagination(1, 0);
-        pagination.setPageFactory(this::createPage);
-        enableGlobalSorting(registrationsTable, registrations, pagination);
-        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(registrations, registrationsTable, pagination));
+        pagination.setPageFactory(pageIndex -> {
+            Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+            if (r instanceof Runnable rep) rep.run();
+            return new VBox();
+        });
+        enableGlobalSorting(table, rows, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, table, pagination));
 
-        HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
-
-        if(DBUtil.getInstance().getUsername().equals("root")){
-            buttonBox.getChildren().addAll(DeleteButton, syncButton);
+        HBox buttonBox = new HBox(10, updateButton, addButton, editButton);
+        if (DBUtil.getInstance().getUsername().equals("root")) {
+            buttonBox.getChildren().addAll(deleteBtn, syncButton);
         }
-
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        registrationsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(registrationsTable, Priority.ALWAYS);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-        tableContainer = new VBox(registrationsTable);
+        tableContainer = new VBox(table);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
+
+        VBox root = new VBox(buttonBox, tableContainer, new VBox(paginationBar, pagination));
+        VBox.setVgrow(root, Priority.ALWAYS);
 
         updateValues();
 
-        VBox table = new VBox();
-        VBox.setVgrow(table, Priority.ALWAYS);
-
-        table.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        registrationsTable.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
-
-        mainPage.openInternalWindow(table, windowTitle, true);
-
+        mainPage.openInternalWindow(root, windowTitle, true);
     }
 
     public void updateValues() {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                List<_Registration> newReg;
-                newReg = registrationUtil.getAllRegistrations().stream()
+                List<_Registration> regs = registrationUtil.getAllRegistrations().stream()
                         .sorted((c1, c2) -> Integer.compare(c1.getId(), c2.getId()))
                         .toList();
 
+                // Підготуємо carId -> boxString разом, без cellFactory
+                Map<Integer, String> carBoxById = com.work.oblikcars.Utils.DB.CarUtil.getInstance()
+                        .getAllCars().stream()
+                        .collect(Collectors.toMap(
+                                c -> c.getId(),
+                                c -> c.getBoxString()
+                        ));
+
+                List<RegistrationRowDTO> mapped = new ArrayList<>(regs.size());
+                for (int i = 0; i < regs.size(); i++) {
+                    mapped.add(RegistrationMappers.toDto(regs.get(i), i + 1, carBoxById));
+                }
 
                 Platform.runLater(() -> {
-                    registrations.setAll(newReg);
-
-                    int pageCount = (int) Math.ceil((double) registrations.size() / rowsPerPage);
-                    pagination.setPageCount(Math.max(pageCount, 1));
-                    int lastPage = Math.max(pageCount - 1, 0);
-                    pagination.setCurrentPageIndex(lastPage);
-
-                    int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, registrations.size());
-                    registrationsTable.setItems(FXCollections.observableArrayList(registrations.subList(fromIndex, toIndex)));
-
-                    tableContainer.getChildren().setAll(registrationsTable);
-
-                    moveTableDown(registrationsTable);
+                    rows.setAll(mapped);
+                    Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+                    if (r instanceof Runnable rep) rep.run();
+                    tableContainer.getChildren().setAll(table);
+                    moveTableDown(table);
                 });
+
                 return null;
             }
         };
-        new Thread(task).start();
+        new Thread(task, "load-registrations").start();
     }
 
-    private Node createPage(int pageIndex) {
-        int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, registrations.size());
-
-        if (fromIndex > toIndex) {
-            registrationsTable.setItems(FXCollections.observableArrayList());
-        } else {
-            registrationsTable.setItems(FXCollections.observableArrayList(registrations.subList(fromIndex, toIndex)));
-        }
-
-        return new VBox();
-    }
+    // (залишок інтерфейсу Pagination не потрібен — усе робить GLOBAL_SORTED_REPAGINATE)
+    private Node createPage(int pageIndex) { return new VBox(); }
 }

@@ -1,10 +1,12 @@
+// ======================= INSURANCE REGISTER =======================
 package com.work.oblikcars.pages.registers.insurance;
 
 import com.work.oblikcars.Utils.DB.InsuranceUtil;
 import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
+import com.work.oblikcars.dto.Registers.InsuranseRegister.InsuranceRegisterMappers;
+import com.work.oblikcars.dto.Registers.InsuranseRegister.InsuranceRegisterRowDTO;
 import com.work.oblikcars.model._Insurance;
-import com.work.oblikcars.model._List;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
@@ -13,7 +15,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
@@ -23,202 +24,151 @@ import javafx.scene.layout.VBox;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class InsuranceRegisterController extends WindowController {
-    private ObservableList<_Insurance> insurances;
+    private ObservableList<InsuranceRegisterRowDTO> rows;
+    private TableView<InsuranceRegisterRowDTO> table;
+
     private MainPage mainPage;
     private InsuranceUtil insuranceUtil;
-    private TableView<_Insurance> insuranceTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
     private DatePicker startDate;
     private DatePicker endDate;
 
-
-    public InsuranceRegisterController() {
-    }
+    public InsuranceRegisterController() {}
 
     public void openWindow() {
         String windowTitle = "Реєстр: страхування";
         mainPage = MainPage.getInstance();
-        if(mainPage.checkOpenWindow(windowTitle))return;
+        if (mainPage.checkOpenWindow(windowTitle)) return;
 
         insuranceUtil = InsuranceUtil.getInstance();
-        insuranceTable = new TableView<>();
-        insurances = FXCollections.observableArrayList();
-        startDate = new DatePicker();
-        endDate = new DatePicker();
 
-        Label timeLabel = new Label("Період: з ");
+        table = new TableView<>();
+        rows  = FXCollections.observableArrayList();
+        startDate = new DatePicker();
+        endDate   = new DatePicker();
+
+        Label timeLabel  = new Label("Період: з ");
         Label timeLabel2 = new Label("по");
 
         Button saveButton = new Button("Зберегти реєстр");
         saveButton.setGraphic(IconsUtil.getTikIcon());
         saveButton.getStyleClass().add("uniform-button");
+
         Button updateButton = new Button();
+        updateButton.getStyleClass().addAll("grey-button","uniform-button");
+        updateButton.setGraphic(IconsUtil.getUpdateIcon());
+
         Button filterButton = new Button("Застосувати фільтр");
         filterButton.setGraphic(IconsUtil.getFilterIcon());
-        updateButton.getStyleClass().add("grey-button");
-        updateButton.setGraphic(IconsUtil.getUpdateIcon());
-        updateButton.getStyleClass().add("uniform-button");
         filterButton.getStyleClass().add("uniform-button");
+
         Button settingsButton = new Button();
         settingsButton.setGraphic(IconsUtil.getClockIcon());
+        settingsButton.getStyleClass().add("uniform-button");
 
-        TableColumn<_Insurance, Integer> numberCol = new TableColumn<>("№ п.п.");
-        numberCol.setCellValueFactory(new PropertyValueFactory<>("number"));
-
-        TableColumn<_Insurance, Integer> carCol = new TableColumn<>("Кіль-ть транспортних засобів");
-        carCol.setCellValueFactory(new PropertyValueFactory<>("numberOfCars"));
-
-        TableColumn<_Insurance, LocalDate> startDateCol = new TableColumn<>("Дата оплати");
-        startDateCol.setCellValueFactory(new PropertyValueFactory<>("payDate"));
-
-        TableColumn<_Insurance, LocalDate> endDateCol = new TableColumn<>("Місяць");
-        endDateCol.setCellValueFactory(new PropertyValueFactory<>("monthStr"));
-
-        TableColumn<_Insurance, LocalDate> priceCol = new TableColumn<>("Вартість");
-        priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
-
-        insuranceTable.getColumns().addAll(carCol, startDateCol, endDateCol, priceCol);
-
-        filterButton.setOnAction(event -> {
-            updateValues();
-        });
-
-        updateButton.setOnAction(event -> {
-            updateValues();
-        });
-
-        settingsButton.setOnAction(e-> {
-            new PeriodController(
-                    "Реєстр: страхування — налаштування періоду",
-                    this::updateDates
-            ).openWindow();
-        });
         Button openFolderButton = new Button("Відкрити папку");
         openFolderButton.setGraphic(IconsUtil.getFolderIcon());
-        openFolderButton.getStyleClass().add("grey-button");
-        openFolderButton.setOnAction(e -> {
-            DocumentsUtil.openFolder(8);
+        openFolderButton.getStyleClass().addAll("grey-button","uniform-button");
+        openFolderButton.setOnAction(e -> DocumentsUtil.openFolder(8));
+
+        // ---- КОЛОНКИ (DTO) ----
+        TableColumn<InsuranceRegisterRowDTO, Integer> numberCol = new TableColumn<>("№ п.п.");
+        numberCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
+
+        numberCol.setMinWidth(40);
+        numberCol.setMaxWidth(90);
+        TableColumn<InsuranceRegisterRowDTO, Integer> carCol = new TableColumn<>("Кіль-ть транспортних засобів");
+        carCol.setCellValueFactory(new PropertyValueFactory<>("numberOfCars"));
+
+        TableColumn<InsuranceRegisterRowDTO, LocalDate> payDateCol = new TableColumn<>("Дата оплати");
+        payDateCol.setCellValueFactory(new PropertyValueFactory<>("payDate"));
+        formatDateColumn(payDateCol);
+
+        TableColumn<InsuranceRegisterRowDTO, String> monthCol = new TableColumn<>("Місяць");
+        monthCol.setCellValueFactory(new PropertyValueFactory<>("monthStr"));
+
+        TableColumn<InsuranceRegisterRowDTO, Double> priceCol = new TableColumn<>("Вартість");
+        priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
+        formatDoubleColumn(priceCol, "#.00");
+
+        table.getColumns().addAll(numberCol, carCol, payDateCol, monthCol, priceCol);
+
+        filterButton.setOnAction(e -> updateValues());
+        updateButton.setOnAction(e -> updateValues());
+
+        settingsButton.setOnAction(e -> new PeriodController(
+                "Реєстр: страхування — налаштування періоду",
+                this::updateDates
+        ).openWindow());
+
+        saveButton.setOnAction(e -> {
+            DocumentsUtil.initializeDirectories();
+            String fileName = "Реєстр страхування " +
+                    startDate.getValue().format(dateFormatterFile) + " -- " +
+                    endDate.getValue().format(dateFormatterFile);
+
+            DocumentsUtil.exportTableViewToExcel(
+                    table, new ArrayList<>(rows),
+                    MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                    8, fileName
+            );
         });
-        openFolderButton.getStyleClass().add("uniform-button");
-
-        saveButton.setOnAction(
-                event -> {
-                    DocumentsUtil util = DocumentsUtil.getInstance();
-                    DocumentsUtil.initializeDirectories();
-
-                    String fileName = "Реєстр страхування " + startDate.getValue().format(dateFormatterFile) + " -- " + endDate.getValue().format(dateFormatterFile);
-
-                    DocumentsUtil.exportTableViewToExcel(
-                            insuranceTable,
-                            new ArrayList<>(insurances), // усі рядки
-                            MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
-                            8,
-                            fileName
-                    );
-                }
-        );
-
 
         pagination = new Pagination(1, 0);
-        pagination.setPageFactory(this::createPage);
-        enableGlobalSorting(insuranceTable, insurances, pagination);
+        enableGlobalSorting(table, rows, pagination);
+        pagination.setPageFactory(pageIndex -> {
+            Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+            if (r instanceof Runnable rep) rep.run();
+            return new VBox();
+        });
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, table, pagination));
 
-        HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, filterButton, saveButton, openFolderButton);
+        HBox buttonBox = new HBox(10, updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, filterButton, saveButton, openFolderButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
-        insuranceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        VBox.setVgrow(insuranceTable, Priority.ALWAYS);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        VBox.setVgrow(table, Priority.ALWAYS);
 
-        tableContainer = new VBox(insuranceTable);
+        tableContainer = new VBox(table);
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         updateValues();
 
-        VBox table = new VBox();
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox root = new VBox(buttonBox, tableContainer, new VBox(paginationBar, pagination));
+        VBox.setVgrow(root, Priority.ALWAYS);
 
-        table.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-
-        insuranceTable.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case RIGHT:
-                    if (pagination.getCurrentPageIndex() < pagination.getPageCount() - 1) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() + 1);
-                    }
-                    break;
-                case LEFT:
-                    if (pagination.getCurrentPageIndex() > 0) {
-                        pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
-                    }
-                    break;
-            }
-        });
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
-
-        mainPage.openInternalWindow(table, windowTitle, true);
+        mainPage.openInternalWindow(root, windowTitle, true);
     }
-
 
     public void updateValues() {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                List<_Insurance> newLists;
-                newLists = insuranceUtil.getBetweenDates(startDate.getValue(), endDate.getValue()).stream()
-                        .sorted((c1, c2) -> Integer.compare(c1.getId(), c2.getId()))
+                List<_Insurance> raw = insuranceUtil.getBetweenDates(startDate.getValue(), endDate.getValue())
+                        .stream()
+                        .sorted((a, b) -> Integer.compare(a.getId(), b.getId()))
                         .toList();
 
+                List<InsuranceRegisterRowDTO> dto = new ArrayList<>(raw.size());
+                for (int i = 0; i < raw.size(); i++) {
+                    dto.add(InsuranceRegisterMappers.toDto(raw.get(i), i + 1));
+                }
 
                 Platform.runLater(() -> {
-                    insurances.setAll(newLists);
-
-                    int pageCount = (int) Math.ceil((double) insurances.size() / rowsPerPage);
-                    pagination.setPageCount(Math.max(pageCount, 1));
-                    int lastPage = Math.max(pageCount - 1, 0);
-                    pagination.setCurrentPageIndex(lastPage);
-
-                    int fromIndex = lastPage * rowsPerPage;
-                    int toIndex = Math.min(fromIndex + rowsPerPage, insurances.size());
-                    insuranceTable.setItems(FXCollections.observableArrayList(insurances.subList(fromIndex, toIndex)));
-
-                    tableContainer.getChildren().setAll(insuranceTable);
-
-                    moveTableDown(insuranceTable);
+                    rows.setAll(dto);
+                    Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
+                    if (r instanceof Runnable rep) rep.run();
+                    tableContainer.getChildren().setAll(table);
+                    moveTableDown(table);
                 });
                 return null;
             }
         };
-        new Thread(task).start();
-    }
-
-    private Node createPage(int pageIndex) {
-        int fromIndex = pageIndex * rowsPerPage;
-        int toIndex = Math.min(fromIndex + rowsPerPage, insurances.size());
-
-        if (fromIndex > toIndex) {
-            insuranceTable.setItems(FXCollections.observableArrayList());
-        } else {
-            insuranceTable.setItems(FXCollections.observableArrayList(insurances.subList(fromIndex, toIndex)));
-        }
-
-        return new VBox();
+        new Thread(task, "load-insurance-register").start();
     }
 
     public void updateDates(LocalDate start, LocalDate end) {
