@@ -36,6 +36,7 @@ public class InspectionRegisterСontroller extends WindowController {
     private TableView<_Inspection> inspectionsTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
     private CarUtil carUtil;
     private DatePicker startDate;
     private DatePicker endDate;
@@ -163,6 +164,7 @@ public class InspectionRegisterСontroller extends WindowController {
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
         enableGlobalSorting(inspectionsTable, inspections, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(inspections, inspectionsTable, pagination));
 
         inspectionsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         VBox.setVgrow(inspectionsTable, Priority.ALWAYS);
@@ -205,7 +207,7 @@ public class InspectionRegisterСontroller extends WindowController {
             }
         });
 
-        table.getChildren().addAll(buttonBox, tableContainer, pagination);
+        table.getChildren().addAll(buttonBox, tableContainer, new VBox(paginationBar, pagination));
 
         mainPage.openInternalWindow(table, windowTitle, true);
 

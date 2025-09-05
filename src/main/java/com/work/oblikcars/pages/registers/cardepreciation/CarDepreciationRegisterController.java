@@ -40,6 +40,7 @@ public class CarDepreciationRegisterController extends WindowController {
     private TableView<_CarDepreciation> carDepreciationTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
     private DatePicker startDate;
     private DatePicker endDate;
     private CheckComboBox<String> carField;
@@ -158,6 +159,7 @@ public class CarDepreciationRegisterController extends WindowController {
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
         enableGlobalSorting(carDepreciationTable, depreciations, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(depreciations, carDepreciationTable, pagination));
 
         HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton, openFolderButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
@@ -203,7 +205,7 @@ public class CarDepreciationRegisterController extends WindowController {
             }
         });
 
-        table.getChildren().addAll(buttonBox, tableContainer, pagination);
+        table.getChildren().addAll(buttonBox, tableContainer, new VBox(paginationBar, pagination));
 
         mainPage.openInternalWindow(table, windowTitle, true);
 

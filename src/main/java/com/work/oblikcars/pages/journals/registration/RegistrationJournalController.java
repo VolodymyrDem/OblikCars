@@ -35,6 +35,7 @@ public class RegistrationJournalController extends WindowController {
     private TableView<_Registration> registrationsTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
     private CarUtil carUtil;
 
     public RegistrationJournalController(){}
@@ -141,6 +142,7 @@ public class RegistrationJournalController extends WindowController {
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
         enableGlobalSorting(registrationsTable, registrations, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(registrations, registrationsTable, pagination));
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
 
@@ -191,7 +193,7 @@ public class RegistrationJournalController extends WindowController {
             }
         });
 
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
+        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
 
         mainPage.openInternalWindow(table, windowTitle, true);
 

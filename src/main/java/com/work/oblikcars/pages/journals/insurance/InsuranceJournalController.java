@@ -35,6 +35,7 @@ public class InsuranceJournalController extends WindowController {
     private TableView<_Insurance> insuranceTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
 
 
     public InsuranceJournalController(){}
@@ -127,6 +128,7 @@ public class InsuranceJournalController extends WindowController {
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
         enableGlobalSorting(insuranceTable, insurances, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(insurances, insuranceTable, pagination));
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
 
@@ -177,7 +179,7 @@ public class InsuranceJournalController extends WindowController {
             }
         });
 
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
+        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
 
         mainPage.openInternalWindow(table, windowTitle, true);
 

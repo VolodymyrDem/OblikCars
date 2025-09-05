@@ -34,6 +34,7 @@ public class CarDisposalJournalController extends WindowController {
     private TableView<_CarDisposal> carDisposalTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
     private CarUtil carUtil;
 
     public CarDisposalJournalController(){}
@@ -131,6 +132,7 @@ public class CarDisposalJournalController extends WindowController {
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
         enableGlobalSorting(carDisposalTable, carDisposals, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(carDisposals, carDisposalTable, pagination));
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton);
 
@@ -181,7 +183,7 @@ public class CarDisposalJournalController extends WindowController {
             }
         });
 
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
+        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
 
         mainPage.openInternalWindow(table, windowTitle, true);
     }

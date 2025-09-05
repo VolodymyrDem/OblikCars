@@ -34,6 +34,7 @@ public class MileageRegisterController extends WindowController {
     private TableView<_List> listsTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
     private CarUtil carUtil;
     private DatePicker startDate;
     private DatePicker endDate;
@@ -166,6 +167,7 @@ public class MileageRegisterController extends WindowController {
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
         enableGlobalSorting(listsTable, lists, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(lists, listsTable, pagination));
 
         HBox buttonBox = new HBox(10,updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton, carLabel, carField,toggleCarSelectionBtn, filterButton, saveButton, openFolderButton);
 
@@ -212,7 +214,7 @@ public class MileageRegisterController extends WindowController {
             }
         });
 
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
+        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
 
         mainPage.openInternalWindow(table, windowTitle, true);
 

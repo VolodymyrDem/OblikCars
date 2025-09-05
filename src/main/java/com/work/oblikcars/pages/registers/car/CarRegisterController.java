@@ -26,6 +26,7 @@ import java.util.*;
 public class CarRegisterController extends WindowController {
     private ObservableList<CarReportRow> rows;
     private Pagination pagination;
+    private HBox paginationBar;
     private DatePicker reportDatePicker;
     private CarUtil carUtil;
     private TableView<CarReportRow> carReportTable;
@@ -137,6 +138,7 @@ public class CarRegisterController extends WindowController {
         pagination.setPageFactory(this::createPage);
 
         enableGlobalSorting(carReportTable, rows, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, carReportTable, pagination));
 
 
 
@@ -201,7 +203,7 @@ public class CarRegisterController extends WindowController {
                 }
         );
 
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
+        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
         mainPage.openInternalWindow(table, windowTitle, true);
 
     }

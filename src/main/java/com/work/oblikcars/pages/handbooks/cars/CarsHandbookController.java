@@ -30,6 +30,7 @@ public class CarsHandbookController extends WindowController {
     private TableView<_Car> carsTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
 
     public CarsHandbookController(){}
 
@@ -168,6 +169,7 @@ public class CarsHandbookController extends WindowController {
         pagination = new Pagination(1, 0);
         pagination.setPageFactory(this::createPage);
         enableGlobalSorting(carsTable, cars, pagination);
+        paginationBar = createPaginationBar(pagination, buildDefaultPaginator(cars, carsTable, pagination));
 
 
         HBox buttonBox = new HBox(10,updateButton, addButton, editButton, deleteButton);
@@ -214,7 +216,7 @@ public class CarsHandbookController extends WindowController {
             }
         });
 
-        table.getChildren().addAll(buttonBox,tableContainer, pagination);
+        table.getChildren().addAll(buttonBox,tableContainer, new VBox(paginationBar, pagination));
 
         mainPage.openInternalWindow(table, windowTitle, true);
         

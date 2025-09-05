@@ -31,6 +31,7 @@ public class ListJournalController extends WindowController {
     private TableView<_List> listsTable;
     private VBox tableContainer;
     private Pagination pagination;
+    private HBox paginationBar;
     private CarUtil carUtil;
 
     private HBox buttonBox;
@@ -188,6 +189,7 @@ public class ListJournalController extends WindowController {
         pagination.setPageFactory(this::createPage);
 
         enableGlobalSorting(listsTable, lists, pagination);
+        paginationBar = createPaginationBar(pagination, () -> rebuildPagination(false));
 
         buttonBox = new HBox(10, updateButton, addButton, editButton, closeListButton, importExcelBtn);
         if (DBUtil.getInstance().getUsername().equals("root")) {
@@ -202,7 +204,7 @@ public class ListJournalController extends WindowController {
         VBox.setVgrow(tableContainer, Priority.ALWAYS);
 
         // Контент без оверлею
-        VBox rootContent = new VBox(buttonBox, tableContainer, pagination);
+        VBox rootContent = new VBox(buttonBox, tableContainer, new VBox(paginationBar, pagination));
         VBox.setVgrow(rootContent, Priority.ALWAYS);
 
         updateValues();

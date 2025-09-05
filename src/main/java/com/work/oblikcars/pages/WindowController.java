@@ -1,25 +1,22 @@
 package com.work.oblikcars.pages;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
 import javafx.scene.control.Pagination;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.HBox;
+import javafx.geometry.Pos;
+import javafx.util.StringConverter;
 
-import java.awt.*;
-import java.io.File;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.time.LocalDate;
-import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public abstract class WindowController {
 
@@ -104,5 +101,94 @@ public abstract class WindowController {
             table.setItems(FXCollections.observableArrayList(masterData.subList(from, to)));
             return true;
         });
+    }
+
+    protected HBox createPaginationBar(Pagination pagination, Runnable onPageOrSizeChanged) {
+        TextField pageInput = new TextField();
+        pageInput.setPromptText("Page");
+        pageInput.setPrefWidth(70);
+
+        ComboBox<Integer> pageSizeBox = new ComboBox<>();
+        pageSizeBox.getItems().setAll(10, 20, 50, 100, 200, 500);
+        pageSizeBox.setEditable(true);
+        pageSizeBox.setConverter(new StringConverter<Integer>() {
+            @Override public String toString(Integer value) {
+                return value == null ? "" : String.valueOf(value);
+            }
+            @Override public Integer fromString(String text) {
+                if (text == null || text.isBlank()) return pageSizeBox.getValue();
+                try {
+                    int v = Integer.parseInt(text.trim());
+                    return Math.max(1, v);
+                } catch (NumberFormatException ex) {
+                    return pageSizeBox.getValue();
+                }
+            }
+        });
+        pageSizeBox.setValue(rowsPerPage);
+
+        Button goBtn = new Button("Go");
+
+        Runnable apply = () -> {
+            Integer desiredIndexOrNull = null;
+            String txt = pageInput.getText();
+            if (txt != null && !txt.isBlank() && isInteger(txt)) {
+                try {
+                    int oneBased = Integer.parseInt(txt);
+                    desiredIndexOrNull = Math.max(0, oneBased - 1);
+                } catch (Exception ignored) {}
+            }
+
+            Integer sel = pageSizeBox.getValue();
+            if (sel != null && sel > 0) {
+                rowsPerPage = sel;
+            } else if (pageSizeBox.getEditor() != null) {
+                String s = pageSizeBox.getEditor().getText();
+                if (isInteger(s)) {
+                    int val = Integer.parseInt(s);
+                    if (val > 0) rowsPerPage = val;
+                }
+            }
+
+            if (onPageOrSizeChanged != null) onPageOrSizeChanged.run();
+
+            if (desiredIndexOrNull != null) {
+                int totalPages = Math.max(1, pagination.getPageCount());
+                int clamped = Math.max(0, Math.min(desiredIndexOrNull, totalPages - 1));
+                if (pagination.getCurrentPageIndex() != clamped) {
+                    pagination.setCurrentPageIndex(clamped);
+                    if (onPageOrSizeChanged != null) onPageOrSizeChanged.run();
+                }
+                pageInput.clear();
+            }
+        };
+
+        goBtn.setOnAction(e -> apply.run());
+        pageInput.setOnAction(e -> apply.run());
+        pageSizeBox.setOnAction(e -> apply.run());
+        if (pageSizeBox.getEditor() != null) {
+            pageSizeBox.getEditor().setOnAction(e -> apply.run());
+        }
+
+        pagination.currentPageIndexProperty().addListener((obs, o, n) -> {
+            if (onPageOrSizeChanged != null) onPageOrSizeChanged.run();
+        });
+
+        HBox bar = new HBox(8, new javafx.scene.control.Label("Page:"), pageInput,
+                new javafx.scene.control.Label("Rows:"), pageSizeBox, goBtn);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        return bar;
+    }
+
+    protected <T> Runnable buildDefaultPaginator(ObservableList<T> masterData, TableView<T> table, Pagination pagination) {
+        return () -> {
+            int pageCount = (int) Math.ceil((double) masterData.size() / Math.max(1, rowsPerPage));
+            pagination.setPageCount(Math.max(pageCount, 1));
+            int current = Math.max(0, Math.min(pagination.getCurrentPageIndex(), Math.max(0, pageCount - 1)));
+            pagination.setCurrentPageIndex(current);
+            int from = current * rowsPerPage;
+            int to = Math.min(from + rowsPerPage, masterData.size());
+            table.setItems(FXCollections.observableArrayList(from < to ? masterData.subList(from, to) : java.util.List.of()));
+        };
     }
 }
