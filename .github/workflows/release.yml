@@ -27,11 +27,11 @@ jobs:
       - name: Install WiX Toolset
         shell: pwsh
         run: |
-          choco install wixtoolset -y
-          $wixBin = "C:\Program Files (x86)\WiX Toolset v3.11\bin"
-          if (Test-Path $wixBin) {
-            echo $wixBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          }
+          choco install wixtoolset --version=3.11.2 -y
+          $wixBin311 = "C:\Program Files (x86)\WiX Toolset v3.11\bin"
+          $wixBin314 = "C:\Program Files (x86)\WiX Toolset v3.14\bin"
+          if (Test-Path $wixBin311) { echo $wixBin311 | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append }
+          if (Test-Path $wixBin314) { echo $wixBin314 | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append }
 
       - name: Resolve version
         id: ver
