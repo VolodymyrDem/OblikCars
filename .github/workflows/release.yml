@@ -2,8 +2,11 @@ name: Release Windows EXE
 
 on:
   push:
+    branches:
+      - "main"
     tags:
       - "v*"
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -21,10 +24,24 @@ jobs:
       - name: Build
         run: mvn -q -DskipTests package
 
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $RefType = "${{ github.ref_type }}"
+          if ($RefType -eq "tag") {
+            $Version = "${{ github.ref_name }}".TrimStart('v')
+          } else {
+            $Version = (mvn -q -DforceStdout help:evaluate -Dexpression=project.version)
+            $Version = $Version -replace "-SNAPSHOT", ""
+          }
+          if ([string]::IsNullOrWhiteSpace($Version)) { $Version = "1.0.0" }
+          echo "version=$Version" >> $env:GITHUB_OUTPUT
+
       - name: Build EXE with jpackage
         shell: pwsh
         run: |
-          $Version = "${{ github.ref_name }}".TrimStart('v')
+          $Version = "${{ steps.ver.outputs.version }}"
           $AppName = "OblikCars"
           $InputDir = "target"
           $MainJar = (Get-ChildItem -Path $InputDir -Filter "*.jar" | Select-Object -First 1).Name
@@ -36,9 +53,21 @@ jobs:
           $Exe = Get-ChildItem -Path dist -Filter "*.exe" | Select-Object -First 1
           Rename-Item -Path $Exe.FullName -NewName "program.exe"
 
-      - name: Create GitHub Release
+      - name: Create/Update GitHub Release (tagged)
+        if: ${{ github.ref_type == 'tag' }}
         uses: softprops/action-gh-release@v2
         with:
+          files: |
+            dist/program.exe
+
+      - name: Create/Update GitHub Release (latest)
+        if: ${{ github.ref_type != 'tag' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          prerelease: true
+          target_commitish: ${{ github.sha }}
           files: |
             dist/program.exe
 
