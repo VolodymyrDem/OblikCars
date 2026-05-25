@@ -41,7 +41,9 @@ jobs:
           if ($RefType -eq "tag") {
             $Version = "${{ github.ref_name }}".TrimStart('v')
           } else {
-            $Version = (mvn -q -DforceStdout help:evaluate -Dexpression=project.version)
+            $pom = Get-Content "pom.xml" -Raw
+            $m = [regex]::Match($pom, "<version>([^<]+)</version>")
+            $Version = $m.Groups[1].Value
             $Version = $Version -replace "-SNAPSHOT", ""
           }
           if ([string]::IsNullOrWhiteSpace($Version)) { $Version = "1.0.0" }
