@@ -7,6 +7,7 @@ public class CarMappers {
         return new CarsTableRowDTO(
                 rowNo,
                 c.getId(),
+                c.getProject(),
                 c.getVin(),
                 c.getNumber(),
                 c.getModel(),

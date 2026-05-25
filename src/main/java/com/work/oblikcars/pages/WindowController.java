@@ -85,6 +85,7 @@ public abstract class WindowController {
                 }
             }
         });
+        column.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
     }
 
     protected <T> void enableGlobalSorting(
@@ -144,8 +145,8 @@ public abstract class WindowController {
                 }
             }
         });
-        // comparator для LocalDate і так naturalOrder; лишаю на випадок явної установки
-        column.setComparator(Comparator.naturalOrder());
+        // null-safe comparator to avoid NPE during global sorting
+        column.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
     }
 
     protected HBox createPaginationBar(Pagination pagination, Runnable onPageOrSizeChanged) {

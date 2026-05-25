@@ -72,6 +72,9 @@ public class CarsHandbookController extends WindowController {
         rowNoCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
         rowNoCol.setMinWidth(40);
         rowNoCol.setMaxWidth(90);
+        TableColumn<CarsTableRowDTO, String> projectCol = new TableColumn<>("Проект");
+        projectCol.setCellValueFactory(new PropertyValueFactory<>("project"));
+
         TableColumn<CarsTableRowDTO, String> vinCol = new TableColumn<>("vin");
         vinCol.setCellValueFactory(new PropertyValueFactory<>("vin"));
 
@@ -135,7 +138,7 @@ public class CarsHandbookController extends WindowController {
         formatDateColumn(firstRegistrationDateCol);
 
         carsTable.getColumns().addAll(
-                rowNoCol, vinCol, numberCol, colorCol, modelCol, yearCol, fuelCol, engineVolumeCol, purchaseDate,
+                rowNoCol, projectCol, vinCol, numberCol, colorCol, modelCol, yearCol, fuelCol, engineVolumeCol, purchaseDate,
                 rentDateCol, mileageStartCol, firstRegistrationDateCol, priceOfFirstRegistrationCol, priceCol,
                 transportPriceCol, descriptionCol, removeDateRawCol, actualCol
         );

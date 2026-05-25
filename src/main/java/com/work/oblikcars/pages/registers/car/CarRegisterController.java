@@ -74,6 +74,9 @@ public class CarRegisterController extends WindowController {
         TableColumn<CarReportDTO, String> modelCol = new TableColumn<>("Модель");
         modelCol.setCellValueFactory(new PropertyValueFactory<>("model"));
 
+        TableColumn<CarReportDTO, String> projectCol = new TableColumn<>("Проект");
+        projectCol.setCellValueFactory(new PropertyValueFactory<>("project"));
+
         TableColumn<CarReportDTO, String> colorCol = new TableColumn<>("Колір");
         colorCol.setCellValueFactory(new PropertyValueFactory<>("color"));
 
@@ -108,6 +111,14 @@ public class CarRegisterController extends WindowController {
         });
         rentCol.visibleProperty().bind(showRentDateCheck.selectedProperty());
 
+        TableColumn<CarReportDTO, LocalDate> totalDateCol = new TableColumn<>("Дата тоталу");
+        totalDateCol.setCellValueFactory(new PropertyValueFactory<>("totalDate"));
+        formatDateColumn(totalDateCol);
+
+        TableColumn<CarReportDTO, LocalDate> totalPayDateCol = new TableColumn<>("Дата відшкодування");
+        totalPayDateCol.setCellValueFactory(new PropertyValueFactory<>("totalPayDate"));
+        formatDateColumn(totalPayDateCol);
+
         TableColumn<CarReportDTO, Double> mileageCol = new TableColumn<>("Загальний пробіг у ренті");
         mileageCol.setCellValueFactory(new PropertyValueFactory<>("mileage"));
         formatDoubleColumn(mileageCol, "#,##0.##");
@@ -129,10 +140,23 @@ public class CarRegisterController extends WindowController {
         formatDoubleColumn(totalPriceCol, "#,##0.00");
 
         table.getColumns().addAll(
-                numCol, modelCol, colorCol, numberCol, purchaseDateCol,
+                numCol, projectCol, modelCol, colorCol, numberCol, purchaseDateCol,
                 yearCol, rentedCol, rentCol, mileageCol, odometerCol,
-                priceCol, firstRegCol, transportPriceCol, totalPriceCol
+                priceCol, firstRegCol, transportPriceCol, totalPriceCol, totalDateCol, totalPayDateCol
         );
+
+        table.setRowFactory(tv -> new TableRow<>() {
+            @Override protected void updateItem(CarReportDTO item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setStyle("");
+                } else if (item.isTotal()) {
+                    setStyle("-fx-background-color: rgba(255, 140, 140, 0.35);");
+                } else {
+                    setStyle("");
+                }
+            }
+        });
 
         // --- Пагінація + глобальне сортування
         pagination = new Pagination(1, 0);

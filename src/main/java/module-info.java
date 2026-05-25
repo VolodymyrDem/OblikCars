@@ -43,6 +43,7 @@ module com.work.oblikcars {
     opens com.work.oblikcars.dto.Journals.ListJournal to javafx.base;
     opens com.work.oblikcars.dto.Journals.InspectionJournal to javafx.base;
     opens com.work.oblikcars.dto.Journals.InsuranceJournal to javafx.base;
+    opens com.work.oblikcars.dto.Journals.InsuranceCaseJournal to javafx.base;
     opens com.work.oblikcars.dto.Journals.RegistrationJournal to javafx.base;
     opens com.work.oblikcars.dto.handbooks.CarHandbook to javafx.base;
     opens com.work.oblikcars.dto.Registers.CarDepreciationRegister to javafx.base;
@@ -61,6 +62,7 @@ module com.work.oblikcars {
     exports com.work.oblikcars.dto.Journals.ListJournal;
     exports com.work.oblikcars.dto.Journals.InspectionJournal;
     exports com.work.oblikcars.dto.Journals.InsuranceJournal;
+    exports com.work.oblikcars.dto.Journals.InsuranceCaseJournal;
     exports com.work.oblikcars.dto.Journals.RegistrationJournal;
     exports com.work.oblikcars.dto.handbooks.CarHandbook;
     exports com.work.oblikcars.dto.Registers.CarDepreciationRegister;

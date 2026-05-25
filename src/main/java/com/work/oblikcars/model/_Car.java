@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 public class _Car {
     private int id;
+    private String project;
     private String vin;
     private String number;
     private String model;
@@ -25,14 +26,13 @@ public class _Car {
     public _Car() {
     }
 
-
-
     public String getBoxString() {
         return number + " " + model;
     }
 
-    public _Car(String vin, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid, double transportPrice) {
+    public _Car(String vin, String project, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid, double transportPrice) {
         this.vin = vin;
+        this.project = project;
         this.number = number;
         this.model = model;
         this.year = year;
@@ -49,9 +49,10 @@ public class _Car {
         this.transportPrice = transportPrice;
     }
 
-    public _Car(int id, String vin, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid, double transportPrice) {
+    public _Car(int id, String vin, String project, String number, String model, int year, String color, String description, String fuel, double engineVolume, LocalDate rentDate, double mileageStart, LocalDate firstRegistrationDate, double priceOfFirstRegistration, double price, boolean valid, double transportPrice) {
         this.id = id;
         this.vin = vin;
+        this.project = project;
         this.number = number;
         this.model = model;
         this.year = year;
@@ -210,5 +211,13 @@ public class _Car {
 
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    public String getProject() {
+        return project;
+    }
+
+    public void setProject(String project) {
+        this.project = project;
     }
 }

@@ -343,15 +343,16 @@ public class DBUtil {
             String useDB = "USE `" + database + "`;";
             statement.executeUpdate(useDB);
 
-            // 3) Створити таблицю cars
+            // 3) Таблиця cars (_Car)
             String createCarsTable = """
     CREATE TABLE IF NOT EXISTS `cars` (
         `id`                         INT NOT NULL AUTO_INCREMENT,
+        `project`                    MEDIUMTEXT,
         `vin`                        MEDIUMTEXT NOT NULL,
         `number`                     MEDIUMTEXT NOT NULL,
         `year`                       INT NOT NULL,
         `color`                      MEDIUMTEXT NOT NULL,
-        `description`               LONGTEXT,
+        `description`                LONGTEXT,
         `model`                      MEDIUMTEXT NOT NULL,
         `fuel`                       MEDIUMTEXT NOT NULL,
         `engineVolume`               DOUBLE NOT NULL,
@@ -360,40 +361,43 @@ public class DBUtil {
         `firstRegistrationDate`      DATE NOT NULL,
         `priceOfFirstRegistration`   DOUBLE,
         `price`                      DOUBLE NOT NULL,
+        `transportPrice`             DOUBLE,
+        `purchaseDate`               DATE,
+        `removeDate`                 DATE,
         `valid`                      TINYINT(1) DEFAULT 1,
         PRIMARY KEY (`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
     """;
             statement.executeUpdate(createCarsTable);
 
-
-            // 4) Створити таблицю inspections
+            // 4) Таблиця inspections (_Inspection)
             String createInspectionsTable = """
                 CREATE TABLE IF NOT EXISTS `inspections` (
                     `id`          INT NOT NULL AUTO_INCREMENT,
                     `carid`       INT NOT NULL,
+                    `worktype`    INT NOT NULL,
                     `price`       DOUBLE NOT NULL,
-                    `description` MEDIUMTEXT NOT NULL,
-                    `mileage`     DOUBLE NOT NULL,
+                    `description` MEDIUMTEXT,
+                    `date`        DATE NOT NULL,
                     PRIMARY KEY (`id`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
                 """;
             statement.executeUpdate(createInspectionsTable);
 
-            // 5) Створити таблицю insurances
+            // 5) Таблиця insurances (_Insurance)
             String createInsurancesTable = """
                 CREATE TABLE IF NOT EXISTS `insurances` (
-                    `id`        INT NOT NULL AUTO_INCREMENT,
-                    `carid`     INT NOT NULL,
-                    `startdate` DATE NOT NULL,
-                    `enddate`   DATE NOT NULL,
-                    `price`     DOUBLE NOT NULL,
+                    `id`            INT NOT NULL AUTO_INCREMENT,
+                    `numberOfCars`  INT NOT NULL,
+                    `payDate`       DATE NOT NULL,
+                    `month`         DATE NOT NULL,
+                    `price`         DOUBLE NOT NULL,
                     PRIMARY KEY (`id`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
                 """;
             statement.executeUpdate(createInsurancesTable);
 
-            // 6) Створити таблицю lists
+            // 6) Таблиця lists (_List)
             String createListsTable = """
                 CREATE TABLE IF NOT EXISTS `lists` (
                     `id`           INT NOT NULL AUTO_INCREMENT,
@@ -401,16 +405,18 @@ public class DBUtil {
                     `startmileage` DOUBLE NOT NULL,
                     `startdate`    DATE NOT NULL,
                     `endmileage`   DOUBLE,
-                    `enddate`      int,
-                    `rents`      int,
-                    `rentsNumber`      DATE,
-                    `done`         TINYINT(1) DEFAULT 0 NOT NULL,
+                    `enddate`      DATE,
+                    `rents`        INT,
+                    `rentDays`     INT,
+                    `income`       DOUBLE,
+                    `description`  LONGTEXT,
+                    `done`         TINYINT(1) NOT NULL DEFAULT 0,
                     PRIMARY KEY (`id`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
                 """;
             statement.executeUpdate(createListsTable);
 
-            // 7) Створити таблицю registrations
+            // 7) Таблиця registrations (_Registration)
             String createRegistrationsTable = """
                 CREATE TABLE IF NOT EXISTS `registrations` (
                     `id`               INT NOT NULL AUTO_INCREMENT,
@@ -422,12 +428,151 @@ public class DBUtil {
                 """;
             statement.executeUpdate(createRegistrationsTable);
 
+            // 8) Таблиця car_depreciation (_CarDepreciation)
+            String createCarDepreciationTable = """
+                CREATE TABLE IF NOT EXISTS `car_depreciation` (
+                    `id`          INT NOT NULL AUTO_INCREMENT,
+                    `carid`       INT NOT NULL,
+                    `date`        DATE NOT NULL,
+                    `price`       DOUBLE NOT NULL,
+                    `description` MEDIUMTEXT,
+                    PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                """;
+            statement.executeUpdate(createCarDepreciationTable);
+
+            // 9) Таблиця car_disposal (_CarDisposal)
+            String createCarDisposalTable = """
+                CREATE TABLE IF NOT EXISTS `car_disposal` (
+                    `id`          INT NOT NULL AUTO_INCREMENT,
+                    `carid`       INT NOT NULL,
+                    `date`        DATE NOT NULL,
+                    `reason`      MEDIUMTEXT,
+                    `price`       DOUBLE NOT NULL,
+                    `description` MEDIUMTEXT,
+                    PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                """;
+            statement.executeUpdate(createCarDisposalTable);
+
+            // 10) Таблиця insurancecase (_InsuranceCase)
+            String createInsuranceCaseTable = """
+                CREATE TABLE IF NOT EXISTS `insurancecase` (
+                    `insuranceCaseId` INT NOT NULL AUTO_INCREMENT,
+                    `carId`           INT NOT NULL,
+                    `date`            DATE NOT NULL,
+                    `description`     MEDIUMTEXT,
+                    `type`            INT NOT NULL,
+                    `payDate`         DATE,
+                    PRIMARY KEY (`insuranceCaseId`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                """;
+            statement.executeUpdate(createInsuranceCaseTable);
+
             // Якщо потрібно створити користувача (гостьового) чи інші сутності — зробіть це тут:
             // UserUtil.getInstance().CreateGuestUser();
 
             System.out.println("Базу даних " + database + " успішно створено або оновлено.");
+
+            // Оновити схему існуючих таблиць (безпечна міграція)
+            migrateSchema();
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Безпечно додає колонки, яких не вистачає у вже існуючих таблицях.
+     * Існуючі дані НЕ видаляються.
+     */
+    public void migrateSchema() {
+        try (Connection connection = Connect();
+             Statement statement = connection.createStatement()) {
+
+            // ── cars ──────────────────────────────────────────────────────────
+            addColumnIfMissing(connection, "cars", "transportPrice", "DOUBLE");
+            addColumnIfMissing(connection, "cars", "purchaseDate",   "DATE");
+            addColumnIfMissing(connection, "cars", "removeDate",     "DATE");
+            addColumnIfMissing(connection, "cars", "project",     "MEDIUMTEXT");
+
+            // ── inspections ───────────────────────────────────────────────────
+            // стара схема мала `mileage` — залишаємо, якщо є; додаємо нові
+            addColumnIfMissing(connection, "inspections", "worktype", "INT NOT NULL DEFAULT 1");
+            addColumnIfMissing(connection, "inspections", "date",     "DATE");
+            dropColumnIfExists(connection,  "inspections", "mileage");
+
+            // ── insurances — повна заміна структури ───────────────────────────
+            // стара схема: carid, startdate, enddate, price
+            // нова схема:  numberOfCars, payDate, month, price
+            dropColumnIfExists(connection, "insurances", "carid");
+            dropColumnIfExists(connection, "insurances", "startdate");
+            dropColumnIfExists(connection, "insurances", "enddate");
+            addColumnIfMissing(connection, "insurances", "numberOfCars", "INT NOT NULL DEFAULT 0");
+            addColumnIfMissing(connection, "insurances", "payDate",      "DATE");
+            addColumnIfMissing(connection, "insurances", "month",        "DATE");
+
+            // ── lists ─────────────────────────────────────────────────────────
+            // стара схема мала enddate INT та rentsNumber DATE
+            fixColumnType(connection, "lists", "enddate", "DATE");
+            dropColumnIfExists(connection, "lists", "rentsNumber");
+            addColumnIfMissing(connection, "lists", "rentDays",    "INT");
+            addColumnIfMissing(connection, "lists", "income",      "DOUBLE");
+            addColumnIfMissing(connection, "lists", "description", "LONGTEXT");
+
+            // ── insurancecase ──────────────────────────────────────────────────
+            addColumnIfMissing(connection, "insurancecase", "carId", "INT NOT NULL");
+            addColumnIfMissing(connection, "insurancecase", "date", "DATE");
+            addColumnIfMissing(connection, "insurancecase", "description", "MEDIUMTEXT");
+            addColumnIfMissing(connection, "insurancecase", "type", "INT");
+            addColumnIfMissing(connection, "insurancecase", "payDate", "DATE");
+
+            System.out.println("Міграція схеми завершена.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Додає колонку, якщо її ще немає. */
+    private void addColumnIfMissing(Connection conn, String table, String column, String definition) throws SQLException {
+        if (!columnExists(conn, table, column)) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition + ";");
+                System.out.println("Додано колонку: " + table + "." + column);
+            }
+        }
+    }
+
+    /** Видаляє колонку, якщо вона є. */
+    private void dropColumnIfExists(Connection conn, String table, String column) throws SQLException {
+        if (columnExists(conn, table, column)) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate("ALTER TABLE `" + table + "` DROP COLUMN `" + column + "`;");
+                System.out.println("Видалено колонку: " + table + "." + column);
+            }
+        }
+    }
+
+    /** Змінює тип колонки (якщо вона вже є). */
+    private void fixColumnType(Connection conn, String table, String column, String newType) throws SQLException {
+        if (columnExists(conn, table, column)) {
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate("ALTER TABLE `" + table + "` MODIFY COLUMN `" + column + "` " + newType + ";");
+                System.out.println("Виправлено тип: " + table + "." + column + " → " + newType);
+            }
+        }
+    }
+
+    /** Перевіряє, чи існує колонка у таблиці через INFORMATION_SCHEMA. */
+    private boolean columnExists(Connection conn, String table, String column) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                     "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, database);
+            ps.setString(2, table);
+            ps.setString(3, column);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
         }
     }
 

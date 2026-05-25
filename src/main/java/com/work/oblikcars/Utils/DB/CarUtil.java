@@ -28,6 +28,7 @@ public class CarUtil {
         _Car car =  new _Car(
                 rs.getInt("id"),
                 rs.getString("vin"),
+                rs.getString("project"),
                 rs.getString("number"),
                 rs.getString("model"),
                 rs.getInt("year"),
@@ -254,30 +255,31 @@ public class CarUtil {
     }
 
     public void addCar(_Car car) {
-        String sql = car.isValid()?"INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, transportPrice, purchaseDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)":
-                                   "INSERT INTO cars (vin, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, removeDate, transportPrice, purchaseDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = car.isValid()?"INSERT INTO cars (vin, project, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, transportPrice, purchaseDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)":
+                                   "INSERT INTO cars (vin, project, number, year, color, description, model, fuel, engineVolume, rentdate, mileageStart, firstRegistrationDate, priceOfFirstRegistration, price, valid, removeDate, transportPrice, purchaseDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, car.getVin());
-            ps.setString(2, car.getNumber());
-            ps.setInt(3, car.getYear());
-            ps.setString(4, car.getColor());
-            ps.setString(5, car.getDescription());
-            ps.setString(6, car.getModel());
-            ps.setString(7, car.getFuel());
-            ps.setDouble(8, car.getEngineVolume());
-            ps.setDate(9, Date.valueOf(car.getRentDate()));
-            ps.setDouble(10, car.getMileageStart());
-            ps.setDate(11, Date.valueOf(car.getFirstRegistrationDate()));
-            ps.setDouble(12, car.getPriceOfFirstRegistration());
-            ps.setDouble(13, car.getPrice());
-            ps.setBoolean(14, car.isValid());
-            ps.setDouble(15, car.getTransportPrice());
-            ps.setDate(16, Date.valueOf(car.getPurchaseDate()));
+            ps.setString(2, car.getProject()== null ? "" : car.getProject());
+            ps.setString(3, car.getNumber());
+            ps.setInt(4, car.getYear());
+            ps.setString(5, car.getColor());
+            ps.setString(6, car.getDescription());
+            ps.setString(7, car.getModel());
+            ps.setString(8, car.getFuel());
+            ps.setDouble(9, car.getEngineVolume());
+            ps.setDate(10, Date.valueOf(car.getRentDate()));
+            ps.setDouble(11, car.getMileageStart());
+            ps.setDate(12, Date.valueOf(car.getFirstRegistrationDate()));
+            ps.setDouble(13, car.getPriceOfFirstRegistration());
+            ps.setDouble(14, car.getPrice());
+            ps.setBoolean(15, car.isValid());
+            ps.setDouble(16, car.getTransportPrice());
+            ps.setDate(17, Date.valueOf(car.getPurchaseDate()));
             if(!car.isValid()) {
-                ps.setDate(15, Date.valueOf(car.getRemoveDate()));
-                ps.setDouble(16, car.getTransportPrice());
-                ps.setDate(17, Date.valueOf(car.getPurchaseDate()));
+                ps.setDate(16, Date.valueOf(car.getRemoveDate()));
+                ps.setDouble(17, car.getTransportPrice());
+                ps.setDate(18, Date.valueOf(car.getPurchaseDate()));
             }
 
 
@@ -287,7 +289,7 @@ public class CarUtil {
     }
 
     public void editCar(_Car car) {
-        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ?, removeDate = ?, transportPrice = ?, purchaseDate = ? WHERE id = ?";
+        String sql = "UPDATE cars SET vin = ?, number = ?, year = ?, color = ?, description = ?, model = ?, fuel = ?, engineVolume = ?, rentdate = ?, mileageStart = ?, firstRegistrationDate = ?, priceOfFirstRegistration = ?, price = ?, valid = ?, removeDate = ?, transportPrice = ?, purchaseDate = ?, project = ? WHERE id = ?";
         try (Connection con = Connect(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, car.getVin());
             ps.setString(2, car.getNumber());
@@ -306,7 +308,8 @@ public class CarUtil {
             ps.setDate(15, car.isValid()?null:Date.valueOf(car.getRemoveDate()));
             ps.setDouble(16, car.getTransportPrice());
             ps.setDate(17, Date.valueOf(car.getPurchaseDate()));
-            ps.setInt(18, car.getId());
+            ps.setString(18, car.getProject() == null ? "" : String.valueOf(car.getProject()));
+            ps.setInt(19, car.getId());
             ps.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
@@ -562,6 +565,7 @@ public class CarUtil {
                 int year         = rs.getInt("year");
                 double price     = rs.getDouble("price");
                 double startMiles= rs.getDouble("mileageStart");
+                String project    = rs.getString("project") == null ? "" : rs.getString("project");
 
                 Double firstRegD  = rs.getObject("priceOfFirstRegistration", Double.class);
                 Double transportD = rs.getObject("transportPrice", Double.class);
@@ -579,8 +583,11 @@ public class CarUtil {
 
                 boolean rented = (rentDate != null) && !rentDate.isAfter(reportDate);
 
+                TotalInfo totalInfo = getLatestTotalCaseInfo(carId);
+
                 CarReportDTO dto = new CarReportDTO(
                         idx++,
+                        project,
                         model,
                         color,
                         number,
@@ -592,7 +599,9 @@ public class CarUtil {
                         transportPrice,
                         rentDate,
                         purchaseDate, // ← може бути null
-                        lastMiles
+                        lastMiles,
+                        totalInfo.totalDate,
+                        totalInfo.totalPayDate
                 );
                 rows.add(dto);
             }
@@ -601,6 +610,44 @@ public class CarUtil {
         }
 
         return rows;
+    }
+
+    private TotalInfo getLatestTotalCaseInfo(int carId) {
+        String sql = """
+        SELECT date, payDate
+          FROM insurancecase
+         WHERE carId = ? AND type = 1
+      ORDER BY date DESC, insuranceCaseId DESC
+         LIMIT 1
+        """;
+
+        try (Connection connection = Connect();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, carId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Date totalSql = rs.getDate("date");
+                    Date paySql = rs.getDate("payDate");
+                    return new TotalInfo(
+                            totalSql == null ? null : totalSql.toLocalDate(),
+                            paySql == null ? null : paySql.toLocalDate()
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting total case for car: " + e.getMessage());
+        }
+        return new TotalInfo(null, null);
+    }
+
+    private static class TotalInfo {
+        final LocalDate totalDate;
+        final LocalDate totalPayDate;
+
+        private TotalInfo(LocalDate totalDate, LocalDate totalPayDate) {
+            this.totalDate = totalDate;
+            this.totalPayDate = totalPayDate;
+        }
     }
 
 

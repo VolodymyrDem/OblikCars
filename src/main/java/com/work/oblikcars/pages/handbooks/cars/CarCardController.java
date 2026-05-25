@@ -19,6 +19,7 @@ public class CarCardController extends WindowController {
     private MainPage mainPage;
     private CarUtil carUtil;
     private GridPane grid;
+    private TextField projectField;
     private TextField vinField;
     private TextField numberField;
     private TextField modelField;
@@ -55,6 +56,7 @@ public class CarCardController extends WindowController {
         grid = new GridPane();
 
         Label vinLabel = new Label("Він код");
+        Label projectLabel = new Label("Проект");
         Label numberLabel = new Label("Номер");
         Label modelLabel = new Label("Модель");
         Label fuelLabel = new Label("Тип палива");
@@ -77,6 +79,7 @@ public class CarCardController extends WindowController {
         descriptionField = new TextArea();
         descriptionField.setPrefRowCount(2);
         vinField = new TextField();
+        projectField = new TextField();
         numberField = new TextField();
         modelField = new TextField();
         fuelField = new TextField();
@@ -93,6 +96,7 @@ public class CarCardController extends WindowController {
         if(selectedCar != null){
             yearField.setText(String.valueOf(selectedCar.getYear()));
             colorField.setText(selectedCar.getColor());
+            projectField.setText(selectedCar.getProject());
             descriptionField.setText(selectedCar.getDescription());
             id = selectedCar.getId();
             vinField.setText(selectedCar.getVin());
@@ -124,6 +128,7 @@ public class CarCardController extends WindowController {
 
 
         grid = PagesUtil.buildGridDouble(
+                projectLabel, projectField,
                 vinLabel, vinField,
                 numberLabel, numberField,
                 modelLabel, modelField,
@@ -168,6 +173,7 @@ public class CarCardController extends WindowController {
                         if(isEditing){
                             car.setId(id);
                             carUtil.editCar(car);
+
                             _Registration registration = registrationUtil.getFirstRegistrationByCarId(car.getId());
                             if(registration != null){
 
@@ -213,6 +219,7 @@ public class CarCardController extends WindowController {
     private _Car createCar(){
         _Car car = new _Car();
         car.setVin(vinField.getText());
+        car.setProject(projectField.getText());
         car.setNumber(numberField.getText());
         car.setModel(modelField.getText());
         car.setFuel(fuelField.getText());

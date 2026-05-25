@@ -5,7 +5,7 @@ import java.time.LocalDate;
 public class CarsTableRowDTO {
     // Порядковий номер у загальному списку (зручно для відображення № рядка)
     private int rowNo;
-
+    private String project;
     // Ключові поля для зворотних операцій
     private int id;
 
@@ -34,12 +34,13 @@ public class CarsTableRowDTO {
     public String getRemoveDateStr() { return valid ? "" : String.valueOf(removeDate); }
 
     // ---- Конструктор ----
-    public CarsTableRowDTO(int rowNo, int id, String vin, String number, String model, Integer year, String color,
+    public CarsTableRowDTO(int rowNo, int id, String project, String vin, String number, String model, Integer year, String color,
                            String description, String fuel, Double engineVolume, LocalDate rentDate,
                            Double mileageStart, LocalDate firstRegistrationDate, Double priceOfFirstRegistration,
                            Double price, Double transportPrice, LocalDate purchaseDate, LocalDate removeDate, boolean valid) {
         this.rowNo = rowNo;
         this.id = id;
+        this.project = project;
         this.vin = vin;
         this.number = number;
         this.model = model;
@@ -65,6 +66,7 @@ public class CarsTableRowDTO {
 
     public int getId() { return id; }
 
+    public String getProject() { return project; }
     public String getVin() { return vin; }
     public String getNumber() { return number; }
     public String getModel() { return model; }

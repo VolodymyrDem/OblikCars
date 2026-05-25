@@ -1,0 +1,44 @@
+name: Release Windows EXE
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 23
+        uses: actions/setup-java@v4
+        with:
+          distribution: "corretto"
+          java-version: "23"
+
+      - name: Build
+        run: mvn -q -DskipTests package
+
+      - name: Build EXE with jpackage
+        shell: pwsh
+        run: |
+          $Version = "${{ github.ref_name }}".TrimStart('v')
+          $AppName = "OblikCars"
+          $InputDir = "target"
+          $MainJar = (Get-ChildItem -Path $InputDir -Filter "*.jar" | Select-Object -First 1).Name
+          jpackage --type exe --name $AppName --input $InputDir --main-jar $MainJar --app-version $Version --dest dist
+
+      - name: Rename EXE to program.exe
+        shell: pwsh
+        run: |
+          $Exe = Get-ChildItem -Path dist -Filter "*.exe" | Select-Object -First 1
+          Rename-Item -Path $Exe.FullName -NewName "program.exe"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/program.exe
+

@@ -6,6 +6,7 @@ import java.time.LocalDate;
 public class CarReportDTO {
     private final int rowNo;
     private final String model;
+    private final String project;
     private final String color;
     private final String number;
     private final Integer year;
@@ -18,9 +19,12 @@ public class CarReportDTO {
     private final LocalDate rentDate;       // Місяць/рік передачі в рент (LocalDate!)
     private final LocalDate purchaseDate;   // Дата купівлі
     private final Double odometer;          // Останній показник одометра
+    private final LocalDate totalDate;      // Дата тоталу (страховий випадок)
+    private final LocalDate totalPayDate;   // Дата відшкодування
 
     public CarReportDTO(
             int rowNo,
+            String project,
             String model,
             String color,
             String number,
@@ -32,10 +36,13 @@ public class CarReportDTO {
             Double transportPrice,
             LocalDate rentDate,
             LocalDate purchaseDate,
-            Double odometer
+            Double odometer,
+            LocalDate totalDate,
+            LocalDate totalPayDate
     ) {
         this.rowNo = rowNo;
         this.model = model;
+        this.project = project;
         this.color = color;
         this.number = number;
         this.year = year;
@@ -48,12 +55,15 @@ public class CarReportDTO {
         this.totalPrice = safe(price) + safe(firstReg) + safe(transportPrice);
         this.rentDate = rentDate;
         this.odometer = odometer;
+        this.totalDate = totalDate;
+        this.totalPayDate = totalPayDate;
     }
 
     private static double safe(Double v) { return v == null ? 0d : v; }
 
     // ---- Гетери для PropertyValueFactory ----
     public int getRowNo() { return rowNo; }
+    public String getProject() { return project; }
     public String getModel() { return model; }
     public String getColor() { return color; }
     public String getNumber() { return number; }
@@ -67,4 +77,7 @@ public class CarReportDTO {
     public LocalDate getRentDate() { return rentDate; }
     public LocalDate getPurchaseDate() { return purchaseDate; }
     public Double getOdometer() { return odometer; }
+    public LocalDate getTotalDate() { return totalDate; }
+    public LocalDate getTotalPayDate() { return totalPayDate; }
+    public boolean isTotal() { return totalDate != null; }
 }

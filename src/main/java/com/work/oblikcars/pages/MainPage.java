@@ -8,6 +8,7 @@ import com.work.oblikcars.pages.journals.cardepreciation.CarDepreciationJournalC
 import com.work.oblikcars.pages.journals.cardisposal.CarDisposalJournalController;
 import com.work.oblikcars.pages.journals.inspection.InspectionJournalController;
 import com.work.oblikcars.pages.journals.insurance.InsuranceJournalController;
+import com.work.oblikcars.pages.journals.insuranceCase.InsuranceCaseJournalController;
 import com.work.oblikcars.pages.journals.list.ListJournalController;
 import com.work.oblikcars.pages.journals.registration.RegistrationJournalController;
 import com.work.oblikcars.pages.registers.car.CarRegisterController;
@@ -122,15 +123,17 @@ public class MainPage {
         MenuItem registrationJournal = new MenuItem("Журнал продовження реєстрації");
         MenuItem carDepreciationJournal = new MenuItem("Журнал справедливої вартості авто");
         MenuItem carDisposalJournal = new MenuItem("Журнал вибуття авто");
+        MenuItem insuranceCaseJournal = new MenuItem("Журнал страхових випадків");
 
         listJournal.setOnAction(e -> openListJournal());
         insuranceJournal.setOnAction(e -> openInsuranceJournal());
+        insuranceCaseJournal.setOnAction(e -> openInsuranceCaseJournal());
         registrationJournal.setOnAction(e -> openRegistrationJournal());
         carDepreciationJournal.setOnAction(e -> openСarDepreciationJournal());
         carDisposalJournal.setOnAction(e -> openCarDisposalJournal());
         inspectionJournal.setOnAction(e -> openInspectionJournal());
 
-        JournalMenu.getItems().addAll(listJournal, insuranceJournal, registrationJournal, inspectionJournal, carDepreciationJournal, carDisposalJournal);
+        JournalMenu.getItems().addAll(listJournal, insuranceJournal, insuranceCaseJournal, registrationJournal, inspectionJournal, carDepreciationJournal, carDisposalJournal);
 
         Menu RegisterMenu = new Menu("Реєстри");
         MenuItem listRegister = new MenuItem("Реєстр подорожніх листів");
@@ -244,6 +247,10 @@ public class MainPage {
     }
     private void openInsuranceJournal() {
         InsuranceJournalController controller = new InsuranceJournalController();
+        controller.openWindow();
+    }
+    private void openInsuranceCaseJournal() {
+        InsuranceCaseJournalController controller = new InsuranceCaseJournalController();
         controller.openWindow();
     }
     private void openСarDepreciationJournal() {
