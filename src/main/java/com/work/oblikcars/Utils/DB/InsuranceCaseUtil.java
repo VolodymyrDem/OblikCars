@@ -184,4 +184,56 @@ public class InsuranceCaseUtil {
         }
     }
 
+    public List<_InsuranceCase> getInsuranceCasesByCarsDates(
+            java.time.LocalDate startDate,
+            java.time.LocalDate endDate,
+            List<Integer> carIds
+    ) {
+        List<_InsuranceCase> list = new ArrayList<>();
+
+        if (carIds == null || carIds.isEmpty()) {
+            return list;
+        }
+
+        String placeholders = String.join(",", carIds.stream().map(id -> "?").toList());
+        java.time.LocalDate start = (startDate == null) ? java.time.LocalDate.of(1970, 1, 1) : startDate;
+        java.time.LocalDate end = (endDate == null) ? java.time.LocalDate.of(2999, 12, 31) : endDate;
+
+        String sql = "SELECT * FROM insurancecase WHERE carId IN (" + placeholders + ") " +
+                "AND date BETWEEN ? AND ? ORDER BY carId, date";
+
+        try (Connection conn = Connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            int index = 1;
+            for (Integer id : carIds) {
+                ps.setInt(index++, id);
+            }
+
+            ps.setDate(index++, java.sql.Date.valueOf(start));
+            ps.setDate(index, java.sql.Date.valueOf(end));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int insuranceCaseId = rs.getInt("insuranceCaseId");
+                    int carId = rs.getInt("carId");
+                    java.sql.Date d = rs.getDate("date");
+                    java.time.LocalDate date = d == null ? null : d.toLocalDate();
+                    String description = rs.getString("description");
+                    int typeCode = rs.getInt("type");
+                    InsuranceCaseType type = null;
+                    try { type = InsuranceCaseType.fromCode(typeCode);} catch (IllegalArgumentException ex) {}
+                    java.sql.Date pd = rs.getDate("payDate");
+                    java.time.LocalDate payDate = pd == null ? null : pd.toLocalDate();
+
+                    list.add(new _InsuranceCase(insuranceCaseId, carId, date, description, type, payDate));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching insurance cases by cars and dates: " + e.getMessage());
+        }
+
+        return list;
+    }
+
 }

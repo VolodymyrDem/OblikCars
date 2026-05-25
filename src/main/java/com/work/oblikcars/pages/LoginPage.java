@@ -12,7 +12,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class LoginPage {
-
+    DBUtil dbUtil = DBUtil.getInstance();
     PasswordField passwordField;
     Button loginButton;
     Button backButton;
@@ -80,6 +80,7 @@ public class LoginPage {
     }
 
     private void goToNextPage(Stage primaryStage){
+        dbUtil.createDatabase();
         MainPage.getInstance().StartPage(primaryStage);
     }
 }

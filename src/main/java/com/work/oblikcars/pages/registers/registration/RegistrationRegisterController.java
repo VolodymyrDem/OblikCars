@@ -22,6 +22,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
 import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
@@ -44,6 +45,10 @@ public class RegistrationRegisterController extends WindowController {
     private DatePicker endDate;
     private CheckComboBox<String> carField;
     Map<Integer, String> carMap;
+    private Integer preselectedCarId;
+    private LocalDate preStart;
+    private LocalDate preEnd;
+    private boolean preselectOnlyCar;
 
     public RegistrationRegisterController(){}
 
@@ -84,6 +89,8 @@ public class RegistrationRegisterController extends WindowController {
         carField.setMaxWidth(200);
         carField.setMinWidth(200);
         carField.getItems().addAll(carMap.values());
+
+        applyPreselection();
 
         Button toggleCarSelectionBtn = new Button("Всі/Очистити");
         toggleCarSelectionBtn.getStyleClass().add("uniform-button");
@@ -175,7 +182,8 @@ public class RegistrationRegisterController extends WindowController {
         VBox root = new VBox(buttonBox, tableContainer, new VBox(paginationBar, pagination));
         VBox.setVgrow(root, Priority.ALWAYS);
 
-        mainPage.openInternalWindow(root, windowTitle, true);
+        StackPane window = mainPage.openInternalWindow(root, windowTitle, true);
+        window.getProperties().put("controller", this);
     }
 
     public void updateValues() {
@@ -232,5 +240,58 @@ public class RegistrationRegisterController extends WindowController {
     public void updateDates(LocalDate start, LocalDate end) {
         startDate.setValue(start);
         endDate.setValue(end);
+    }
+
+    public void openWindowForCarAllTime(int carId) {
+        String windowTitle = "Реєстр: продовження реєстрації";
+        mainPage = MainPage.getInstance();
+        if (mainPage.checkOpenWindow(windowTitle)) {
+            StackPane window = mainPage.openWindows.get(windowTitle);
+            Object controller = window == null ? null : window.getProperties().get("controller");
+            if (controller instanceof RegistrationRegisterController existing) {
+                existing.applyPreselectionForCarAllTime(carId);
+            }
+            return;
+        }
+        this.preselectedCarId = carId;
+        this.preStart = LocalDate.of(1970, 1, 1);
+        this.preEnd = LocalDate.now();
+        this.preselectOnlyCar = true;
+        openWindow();
+    }
+
+    public void applyPreselectionForCarAllTime(int carId) {
+        this.preselectedCarId = carId;
+        this.preStart = LocalDate.of(1970, 1, 1);
+        this.preEnd = LocalDate.now();
+        this.preselectOnlyCar = true;
+        applyPreselection();
+        updateValues();
+    }
+
+    private void applyPreselection() {
+        if (preStart != null) startDate.setValue(preStart);
+        if (preEnd != null) endDate.setValue(preEnd);
+        if (preselectedCarId != null) {
+            ensureCarInMap(preselectedCarId);
+            String carBox = carMap.get(preselectedCarId);
+            if (carBox != null) {
+                var checkModel = carField.getCheckModel();
+                if (preselectOnlyCar) checkModel.clearChecks();
+                checkModel.check(carBox);
+            }
+        }
+    }
+
+    private void ensureCarInMap(int carId) {
+        if (!carMap.containsKey(carId)) {
+            _Car car = carUtil.getCarById(carId);
+            if (car != null) {
+                carMap.put(carId, car.getBoxString());
+                if (!carField.getItems().contains(car.getBoxString())) {
+                    carField.getItems().add(car.getBoxString());
+                }
+            }
+        }
     }
 }

@@ -51,7 +51,8 @@ public class DocumentsUtil {
             "05_ListReg",
             "06_MileageReg",
             "07_RegistrationReg",
-            "08_InsuranceReg"
+            "08_InsuranceReg",
+            "09_InsuranceCaseReg"
     );
 
     private static final List<String> ELEMENTSNAMES = List.of(
@@ -62,7 +63,8 @@ public class DocumentsUtil {
             "Реєстр подорожні листи",
             "Реєстр пройдений кілометраж",
             "Реєстр продовження реєстрації",
-            "Реєстр страхування"
+            "Реєстр страхування",
+            "Реєстр страхові випадки"
     );
 
     private static final String ROOT_FOLDER_NAME = "Documents";
@@ -608,8 +610,8 @@ public class DocumentsUtil {
             int folderIndex,
             String fileName
     ) {
-        if (folderIndex < 1 || folderIndex > 8) {
-            throw new IllegalArgumentException("Номер папки має бути від 1 до 8.");
+        if (folderIndex < 1 || folderIndex > SUBFOLDERS.size()) {
+            throw new IllegalArgumentException("Невірний індекс папки.");
         }
 
         List<TableColumn<T, ?>> visibleColumns = tableView.getColumns().stream()

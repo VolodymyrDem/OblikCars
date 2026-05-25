@@ -16,6 +16,7 @@ import com.work.oblikcars.pages.registers.cardepreciation.CarDepreciationRegiste
 import com.work.oblikcars.pages.registers.cardisposal.CarDisposalRegister;
 import com.work.oblikcars.pages.registers.inspection.InspectionRegisterСontroller;
 import com.work.oblikcars.pages.registers.insurance.InsuranceRegisterController;
+import com.work.oblikcars.pages.registers.insuranceCase.InsuranceCaseRegisterController;
 import com.work.oblikcars.pages.registers.list.ListRegisterController;
 import com.work.oblikcars.pages.registers.mileage.MileageRegisterController;
 import com.work.oblikcars.pages.registers.registration.RegistrationRegisterController;
@@ -145,6 +146,7 @@ public class MainPage {
         MenuItem carDepreciationRegister = new MenuItem("Реєстр справедливої вартості авто");
         MenuItem carDisposalRegister = new MenuItem("Реєстр вибуття авто");
         MenuItem registrationRegister = new MenuItem("Реєстр продовження реєстрації");
+        MenuItem insuranceCaseRegister = new MenuItem("Реєстр страхові випадки");
 
         spentRegister.setOnAction(e -> openSpentRegister());
         carRegister.setOnAction(e -> openCarRegister());
@@ -155,7 +157,8 @@ public class MainPage {
         carDepreciationRegister.setOnAction(e -> openCarDepreciationRegister());
         carDisposalRegister.setOnAction( e-> openCarDisposalRegister());
         registrationRegister.setOnAction( e-> openRegistrationRegister());
-        RegisterMenu.getItems().addAll(listRegister, mileageRegister, carRegister, insuranceRegister, serviceRegister, carDepreciationRegister, carDisposalRegister, registrationRegister);
+        insuranceCaseRegister.setOnAction(e -> openInsuranceCaseRegister());
+        RegisterMenu.getItems().addAll(listRegister, mileageRegister, carRegister, insuranceRegister, insuranceCaseRegister, serviceRegister, carDepreciationRegister, carDisposalRegister, registrationRegister);
 
         menuBar.getMenus().addAll(handbookMenu, JournalMenu, RegisterMenu);
 
@@ -294,6 +297,10 @@ public class MainPage {
     }
     private void openRegistrationRegister() {
         RegistrationRegisterController controller = new RegistrationRegisterController();
+        controller.openWindow();
+    }
+    private void openInsuranceCaseRegister() {
+        InsuranceCaseRegisterController controller = new InsuranceCaseRegisterController();
         controller.openWindow();
     }
 

@@ -9,6 +9,12 @@ import com.work.oblikcars.dto.handbooks.CarHandbook.CarsTableRowDTO;
 import com.work.oblikcars.model._Car;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.WindowController;
+import com.work.oblikcars.pages.registers.list.ListRegisterController;
+import com.work.oblikcars.pages.registers.mileage.MileageRegisterController;
+import com.work.oblikcars.pages.registers.insuranceCase.InsuranceCaseRegisterController;
+import com.work.oblikcars.pages.registers.inspection.InspectionRegisterСontroller;
+import com.work.oblikcars.pages.registers.cardepreciation.CarDepreciationRegisterController;
+import com.work.oblikcars.pages.registers.registration.RegistrationRegisterController;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -149,6 +155,56 @@ public class CarsHandbookController extends WindowController {
             deleteButton.setDisable(!selected);
         });
 
+        carsTable.setRowFactory(tv -> {
+            TableRow<CarsTableRowDTO> row = new TableRow<>();
+            ContextMenu menu = new ContextMenu();
+
+            MenuItem editItem = new MenuItem("Відредагувати авто");
+            MenuItem openListRegister = new MenuItem("Відкрити реєстр подорожніх листів");
+            MenuItem openMileageRegister = new MenuItem("Відкрити реєстр пройденого кілометражу");
+            MenuItem openInsuranceCaseRegister = new MenuItem("Відкрити реєстр страхових випадків");
+            MenuItem openInspectionRegister = new MenuItem("Відкрити реєстр сервісів");
+            MenuItem openDepreciationRegister = new MenuItem("Відкрити реєстр справедливої вартості авто");
+            MenuItem openRegistrationRegister = new MenuItem("Відкрити реєстр продовження реєстрації");
+
+            menu.getItems().addAll(
+                    editItem,
+                    new SeparatorMenuItem(),
+                    openListRegister,
+                    openMileageRegister,
+                    openInsuranceCaseRegister,
+                    openInspectionRegister,
+                    openDepreciationRegister,
+                    openRegistrationRegister
+            );
+
+            row.setOnContextMenuRequested(event -> {
+                if (row.isEmpty()) return;
+                carsTable.getSelectionModel().select(row.getIndex());
+                menu.show(row, event.getScreenX(), event.getScreenY());
+            });
+
+            editItem.setOnAction(e -> {
+                CarsTableRowDTO dto = row.getItem();
+                if (dto != null) {
+                    _Car fresh = carUtil.getCarById(dto.getId());
+                    if (fresh != null) {
+                        CarCardController carCardController = new CarCardController();
+                        carCardController.openWindow(this, fresh);
+                    }
+                }
+            });
+
+            openListRegister.setOnAction(e -> openListRegisterForCar(row.getItem()));
+            openMileageRegister.setOnAction(e -> openMileageRegisterForCar(row.getItem()));
+            openInsuranceCaseRegister.setOnAction(e -> openInsuranceCaseRegisterForCar(row.getItem()));
+            openInspectionRegister.setOnAction(e -> openInspectionRegisterForCar(row.getItem()));
+            openDepreciationRegister.setOnAction(e -> openDepreciationRegisterForCar(row.getItem()));
+            openRegistrationRegister.setOnAction(e -> openRegistrationRegisterForCar(row.getItem()));
+
+            return row;
+        });
+
         editButton.setOnAction(e -> {
             CarsTableRowDTO dto = carsTable.getSelectionModel().getSelectedItem();
             if (dto != null) {
@@ -240,6 +296,42 @@ public class CarsHandbookController extends WindowController {
 
         mainPage.openInternalWindow(table, windowTitle, true);
         
+    }
+
+    private void openListRegisterForCar(CarsTableRowDTO dto) {
+        if (dto == null) return;
+        ListRegisterController controller = new ListRegisterController();
+        controller.openWindowForCarAllTime(dto.getId());
+    }
+
+    private void openMileageRegisterForCar(CarsTableRowDTO dto) {
+        if (dto == null) return;
+        MileageRegisterController controller = new MileageRegisterController();
+        controller.openWindowForCarAllTime(dto.getId());
+    }
+
+    private void openInsuranceCaseRegisterForCar(CarsTableRowDTO dto) {
+        if (dto == null) return;
+        InsuranceCaseRegisterController controller = new InsuranceCaseRegisterController();
+        controller.openWindowForCarAllTime(dto.getId());
+    }
+
+    private void openInspectionRegisterForCar(CarsTableRowDTO dto) {
+        if (dto == null) return;
+        InspectionRegisterСontroller controller = new InspectionRegisterСontroller();
+        controller.openWindowForCarAllTime(dto.getId());
+    }
+
+    private void openDepreciationRegisterForCar(CarsTableRowDTO dto) {
+        if (dto == null) return;
+        CarDepreciationRegisterController controller = new CarDepreciationRegisterController();
+        controller.openWindowForCarAllTime(dto.getId());
+    }
+
+    private void openRegistrationRegisterForCar(CarsTableRowDTO dto) {
+        if (dto == null) return;
+        RegistrationRegisterController controller = new RegistrationRegisterController();
+        controller.openWindowForCarAllTime(dto.getId());
     }
 
     public void updateValues() {

@@ -51,6 +51,7 @@ module com.work.oblikcars {
     opens com.work.oblikcars.dto.Registers.InspectionRegister to javafx.base;
     opens com.work.oblikcars.dto.Registers.InsuranseRegister to javafx.base;
     opens com.work.oblikcars.dto.Registers.ListRegister to javafx.base;
+    opens com.work.oblikcars.dto.Registers.InsuranceCaseRegister to javafx.base;
 
     // --- exports (як у вас було) ---
     exports com.work.oblikcars;
@@ -70,6 +71,7 @@ module com.work.oblikcars {
     exports com.work.oblikcars.dto.Registers.InspectionRegister;
     exports com.work.oblikcars.dto.Registers.InsuranseRegister;
     exports com.work.oblikcars.dto.Registers.ListRegister;
+    exports com.work.oblikcars.dto.Registers.InsuranceCaseRegister;
 
     // За бажанням можна також експортувати пакет реєстру пробігу:
     // (не потрібно для TableView, але стане в нагоді, якщо ці DTO використовуватимуться ззовні модуля)

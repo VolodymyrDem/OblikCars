@@ -1,14 +1,14 @@
-// ======================= CAR DEPRECIATION REGISTER =======================
-package com.work.oblikcars.pages.registers.cardepreciation;
+// ======================= INSURANCE CASE REGISTER =======================
+package com.work.oblikcars.pages.registers.insuranceCase;
 
-import com.work.oblikcars.Utils.DB.CarDepreciationUtil;
 import com.work.oblikcars.Utils.DB.CarUtil;
+import com.work.oblikcars.Utils.DB.InsuranceCaseUtil;
 import com.work.oblikcars.Utils.DocumentsUtil;
 import com.work.oblikcars.Utils.IconsUtil;
-import com.work.oblikcars.dto.Registers.CarDepreciationRegister.CarDepreciationMappers;
-import com.work.oblikcars.dto.Registers.CarDepreciationRegister.CarDepreciationRowDTO;
+import com.work.oblikcars.dto.Registers.InsuranceCaseRegister.InsuranceCaseRegisterMappers;
+import com.work.oblikcars.dto.Registers.InsuranceCaseRegister.InsuranceCaseRegisterRowDTO;
 import com.work.oblikcars.model._Car;
-import com.work.oblikcars.model._CarDepreciation;
+import com.work.oblikcars.model._InsuranceCase;
 import com.work.oblikcars.pages.MainPage;
 import com.work.oblikcars.pages.PeriodController;
 import com.work.oblikcars.pages.WindowController;
@@ -27,18 +27,22 @@ import org.controlsfx.control.CheckComboBox;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-public class CarDepreciationRegisterController extends WindowController {
-    private ObservableList<CarDepreciationRowDTO> rows;
+public class InsuranceCaseRegisterController extends WindowController {
+    private ObservableList<InsuranceCaseRegisterRowDTO> rows;
+    private TableView<InsuranceCaseRegisterRowDTO> table;
+
     private MainPage mainPage;
+    private InsuranceCaseUtil insuranceCaseUtil;
     private CarUtil carUtil;
-    private CarDepreciationUtil carDepreciationUtil;
-    private TableView<CarDepreciationRowDTO> table;
+
     private VBox tableContainer;
     private Pagination pagination;
     private HBox paginationBar;
+
     private DatePicker startDate;
     private DatePicker endDate;
     private CheckComboBox<String> carField;
@@ -48,21 +52,22 @@ public class CarDepreciationRegisterController extends WindowController {
     private LocalDate preEnd;
     private boolean preselectOnlyCar;
 
-    public CarDepreciationRegisterController() {}
+    public InsuranceCaseRegisterController() {}
 
     public void openWindow() {
-        String windowTitle = "Реєстр: справедлива вартість авто";
+        String windowTitle = "Реєстр: страхові випадки";
         mainPage = MainPage.getInstance();
         if (mainPage.checkOpenWindow(windowTitle)) return;
 
-        carDepreciationUtil = CarDepreciationUtil.getInstance();
+        insuranceCaseUtil = InsuranceCaseUtil.getInsuranceCaseUtil();
         carUtil = CarUtil.getInstance();
 
-        table = new TableView<>();
         rows = FXCollections.observableArrayList();
+        table = new TableView<>();
+
         carMap = carUtil.getAllCarComboMap(true);
 
-        Label carLabel = new Label("Авто: ");
+        Label carLabel = new Label("Авто:");
         Label timeLabel = new Label("Період: з ");
         Label timeLabel2 = new Label("по");
 
@@ -70,82 +75,89 @@ public class CarDepreciationRegisterController extends WindowController {
         filterButton.setGraphic(IconsUtil.getFilterIcon());
         filterButton.getStyleClass().add("uniform-button");
 
+        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
+        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
+
         Button saveButton = new Button("Зберегти реєстр");
         saveButton.setGraphic(IconsUtil.getTikIcon());
         saveButton.getStyleClass().add("uniform-button");
 
         Button settingsButton = new Button();
         settingsButton.setGraphic(IconsUtil.getClockIcon());
-        settingsButton.getStyleClass().add("uniform-button");
 
-        Button openFolderButton = new Button("Відкрити папку");
-        openFolderButton.setGraphic(IconsUtil.getFolderIcon());
-        openFolderButton.getStyleClass().addAll("grey-button", "uniform-button");
-        openFolderButton.setOnAction(e -> DocumentsUtil.openFolder(2));
+        startDate = new DatePicker(LocalDate.now());
+        endDate = new DatePicker(LocalDate.now());
+        carField = new CheckComboBox<>();
+        carField.setPrefWidth(200);
+        carField.setMaxWidth(200);
+        carField.setMinWidth(200);
+        carField.getItems().addAll(carMap.values());
+
+        applyPreselection();
 
         Button updateButton = new Button();
         updateButton.getStyleClass().addAll("grey-button", "uniform-button");
         updateButton.setGraphic(IconsUtil.getUpdateIcon());
 
-        startDate = new DatePicker();
-        endDate = new DatePicker();
-
-        carField = new CheckComboBox<>();
-        carField.setPrefWidth(200);
-        carField.getItems().addAll(carMap.values());
-
-        applyPreselection();
-
-        Button toggleCarSelectionBtn = new Button("Всі/Очистити");
-        toggleCarSelectionBtn.getStyleClass().add("uniform-button");
-        toggleCarSelectionBtn.setOnAction(e -> {
-            var m = carField.getCheckModel();
-            if (m.getCheckedItems().isEmpty()) carField.getItems().forEach(m::check);
-            else m.clearChecks();
-        });
+        Button openFolderButton = new Button("Відкрити папку");
+        openFolderButton.setGraphic(IconsUtil.getFolderIcon());
+        openFolderButton.getStyleClass().addAll("grey-button", "uniform-button");
+        openFolderButton.setOnAction(e -> DocumentsUtil.openFolder(9));
 
         filterButton.setOnAction(e -> updateValues());
         updateButton.setOnAction(e -> updateValues());
 
-        saveButton.setOnAction(e -> {
-            DocumentsUtil.initializeDirectories();
-            String fileName = "Реєстр справедлива вартість авто "
-                    + startDate.getValue().format(dateFormatterFile)
-                    + " -- "
-                    + endDate.getValue().format(dateFormatterFile);
-            DocumentsUtil.exportTableViewToExcel(
-                    table, new ArrayList<>(rows),
-                    MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
-                    2, fileName
-            );
-        });
-
         settingsButton.setOnAction(e -> new PeriodController(
-                "Реєстр: справедлива вартість авто — налаштування періоду",
+                "Реєстр: страхові випадки — налаштування періоду",
                 this::updateDates
         ).openWindow());
 
-        // --- КОЛОНКИ ---
-        TableColumn<CarDepreciationRowDTO, Integer> numCol = new TableColumn<>("№ п.п.");
-        numCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
+        saveButton.setOnAction(e -> {
+            DocumentsUtil.initializeDirectories();
 
+            String fileName = "Реєстр страхові випадки " +
+                    startDate.getValue().format(dateFormatterFile) + " -- " +
+                    endDate.getValue().format(dateFormatterFile);
+
+            DocumentsUtil.exportTableViewToExcel(
+                    table, new ArrayList<>(rows),
+                    MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
+                    9, fileName
+            );
+        });
+
+        toggleCarSelectionBtn.setOnAction(e -> {
+            var checkModel = carField.getCheckModel();
+            if (checkModel.getCheckedItems().isEmpty()) {
+                carField.getItems().forEach(checkModel::check);
+            } else {
+                checkModel.clearChecks();
+            }
+        });
+
+        TableColumn<InsuranceCaseRegisterRowDTO, Integer> numCol = new TableColumn<>("№ п.п.");
+        numCol.setCellValueFactory(new PropertyValueFactory<>("rowNo"));
         numCol.setMinWidth(40);
         numCol.setMaxWidth(90);
-        TableColumn<CarDepreciationRowDTO, String> carCol = new TableColumn<>("Авто");
-        carCol.setCellValueFactory(new PropertyValueFactory<>("car"));
 
-        TableColumn<CarDepreciationRowDTO, LocalDate> dateCol = new TableColumn<>("Дата");
+        TableColumn<InsuranceCaseRegisterRowDTO, String> carCol = new TableColumn<>("Авто");
+        carCol.setCellValueFactory(new PropertyValueFactory<>("carBox"));
+
+        TableColumn<InsuranceCaseRegisterRowDTO, String> typeCol = new TableColumn<>("Тип");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("typeName"));
+
+        TableColumn<InsuranceCaseRegisterRowDTO, LocalDate> dateCol = new TableColumn<>("Дата події");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
         formatDateColumn(dateCol);
 
-        TableColumn<CarDepreciationRowDTO, Double> priceCol = new TableColumn<>("Вартість");
-        priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
-        formatDoubleColumn(priceCol, "#.00");
+        TableColumn<InsuranceCaseRegisterRowDTO, LocalDate> payDateCol = new TableColumn<>("Дата виплати");
+        payDateCol.setCellValueFactory(new PropertyValueFactory<>("payDate"));
+        formatDateColumn(payDateCol);
 
-        TableColumn<CarDepreciationRowDTO, String> descriptionCol = new TableColumn<>("Опис");
+        TableColumn<InsuranceCaseRegisterRowDTO, String> descriptionCol = new TableColumn<>("Коментар");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        table.getColumns().addAll(numCol, carCol, dateCol, priceCol, descriptionCol);
+        table.getColumns().addAll(numCol, carCol, typeCol, dateCol, payDateCol, descriptionCol);
 
         pagination = new Pagination(1, 0);
         enableGlobalSorting(table, rows, pagination);
@@ -156,9 +168,10 @@ public class CarDepreciationRegisterController extends WindowController {
         });
         paginationBar = createPaginationBar(pagination, buildDefaultPaginator(rows, table, pagination));
 
-        HBox buttonBox = new HBox(
-                10, updateButton, timeLabel, startDate, timeLabel2, endDate,
-                settingsButton, carLabel, carField, toggleCarSelectionBtn, filterButton, saveButton, openFolderButton
+        HBox buttonBox = new HBox(10,
+                updateButton, timeLabel, startDate, timeLabel2, endDate, settingsButton,
+                carLabel, carField, toggleCarSelectionBtn,
+                filterButton, saveButton, openFolderButton
         );
         buttonBox.setAlignment(Pos.CENTER_LEFT);
 
@@ -178,37 +191,37 @@ public class CarDepreciationRegisterController extends WindowController {
     }
 
     public void updateValues() {
+        LocalDate start = startDate.getValue();
+        LocalDate end = endDate.getValue();
+
+        List<String> selectedCarNames = carField.getCheckModel().getCheckedItems();
+        List<Integer> selectedCarIds = carMap.entrySet().stream()
+                .filter(e -> selectedCarNames.contains(e.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
+
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                LocalDate start = startDate.getValue();
-                LocalDate end   = endDate.getValue();
+                List<_InsuranceCase> raw;
+                if (selectedCarIds == null || selectedCarIds.isEmpty()) {
+                    List<Integer> allCarIds = new ArrayList<>(carMap.keySet());
+                    raw = insuranceCaseUtil.getInsuranceCasesByCarsDates(start, end, allCarIds);
+                } else {
+                    raw = insuranceCaseUtil.getInsuranceCasesByCarsDates(start, end, selectedCarIds);
+                }
 
-                List<String> selectedCarNames = carField.getCheckModel().getCheckedItems();
-                List<Integer> selectedCarIds = carMap.entrySet().stream()
-                        .filter(e -> selectedCarNames.contains(e.getValue()))
-                        .map(Map.Entry::getKey)
+                List<_InsuranceCase> sorted = raw.stream()
+                        .sorted(Comparator.comparingInt(_InsuranceCase::getCarId))
                         .toList();
 
-                List<Integer> carIdsToQuery =
-                        (selectedCarIds == null || selectedCarIds.isEmpty())
-                                ? carMap.keySet().stream().toList()
-                                : selectedCarIds;
-
-                List<_CarDepreciation> raw = carDepreciationUtil
-                        .getDepreciationsByCarsDates(start, end, carIdsToQuery)
-                        .stream()
-                        .sorted((a, b) -> Integer.compare(a.getCarId(), b.getCarId()))
-                        .toList();
-
-                List<CarDepreciationRowDTO> dtos = new ArrayList<>(raw.size());
-                for (int i = 0; i < raw.size(); i++) {
-                    var e = raw.get(i);
-                    dtos.add(CarDepreciationMappers.toDto(e, carMap.get(e.getCarId()), i + 1)); // rowNo тут
+                List<InsuranceCaseRegisterRowDTO> mapped = new ArrayList<>(sorted.size());
+                for (int i = 0; i < sorted.size(); i++) {
+                    mapped.add(InsuranceCaseRegisterMappers.toDto(sorted.get(i), i + 1, carUtil));
                 }
 
                 Platform.runLater(() -> {
-                    rows.setAll(dtos);
+                    rows.setAll(mapped);
                     Object r = table.getProperties().get("GLOBAL_SORTED_REPAGINATE");
                     if (r instanceof Runnable rep) rep.run();
                     tableContainer.getChildren().setAll(table);
@@ -217,7 +230,7 @@ public class CarDepreciationRegisterController extends WindowController {
                 return null;
             }
         };
-        new Thread(task, "load-car-depreciation-register").start();
+        new Thread(task, "load-insurance-case-register").start();
     }
 
     public void updateDates(LocalDate start, LocalDate end) {
@@ -226,12 +239,12 @@ public class CarDepreciationRegisterController extends WindowController {
     }
 
     public void openWindowForCarAllTime(int carId) {
-        String windowTitle = "Реєстр: справедлива вартість авто";
+        String windowTitle = "Реєстр: страхові випадки";
         mainPage = MainPage.getInstance();
         if (mainPage.checkOpenWindow(windowTitle)) {
             StackPane window = mainPage.openWindows.get(windowTitle);
             Object controller = window == null ? null : window.getProperties().get("controller");
-            if (controller instanceof CarDepreciationRegisterController existing) {
+            if (controller instanceof InsuranceCaseRegisterController existing) {
                 existing.applyPreselectionForCarAllTime(carId);
             }
             return;
@@ -278,3 +291,4 @@ public class CarDepreciationRegisterController extends WindowController {
         }
     }
 }
+
