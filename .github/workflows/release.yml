@@ -24,19 +24,6 @@ jobs:
       - name: Build
         run: mvn -q -DskipTests package
 
-      - name: Install WiX Toolset
-        shell: pwsh
-        run: |
-          choco uninstall wixtoolset -y
-          choco install wixtoolset --version=3.11.2 -y
-          $wixHome311 = "C:\Program Files (x86)\WiX Toolset v3.11"
-          if (Test-Path $wixHome311) { "WIX_HOME=$wixHome311" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append }
-          if (Test-Path "$env:WIX_HOME\bin") { echo "$env:WIX_HOME\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append }
-          where.exe light
-          light.exe -?
-          dir "$env:WIX_HOME\bin"
-          if (Test-Path "$env:WIX_HOME\bin\WixUtilExtension.dll") { Write-Host "WixUtilExtension.dll OK" }
-
       - name: Resolve version
         id: ver
         shell: pwsh
@@ -63,20 +50,25 @@ jobs:
           $AppName = "OblikCars"
           $InputDir = "target"
           $MainJar = (Get-ChildItem -Path $InputDir -Filter "*.jar" | Select-Object -First 1).Name
-          jpackage --verbose --type exe --name $AppName --input $InputDir --main-jar $MainJar --main-class com.work.oblikcars.Main --app-version $Version --dest dist
+          jpackage `
+            --type app-image `
+            --name $AppName `
+            --input $InputDir `
+            --main-jar $MainJar `
+            --main-class com.work.oblikcars.Main `
+            --app-version $Version `
+            --dest dist
 
-      - name: Rename EXE to program.exe
+      - name: Zip the app image
         shell: pwsh
         run: |
-          $Exe = Get-ChildItem -Path dist -Filter "*.exe" | Select-Object -First 1
-          Rename-Item -Path $Exe.FullName -NewName "program.exe"
+          Compress-Archive -Path "dist\OblikCars" -DestinationPath "dist\OblikCars.zip"
 
       - name: Create/Update GitHub Release (tagged)
         if: ${{ github.ref_type == 'tag' }}
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/program.exe
+          files: dist/OblikCars.zip
 
       - name: Create/Update GitHub Release (latest)
         if: ${{ github.ref_type != 'tag' }}
@@ -86,6 +78,4 @@ jobs:
           name: Latest build
           prerelease: true
           target_commitish: ${{ github.sha }}
-          files: |
-            dist/program.exe
-
+          files: dist/OblikCars.zip
