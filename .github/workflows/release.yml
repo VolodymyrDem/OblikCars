@@ -45,7 +45,7 @@ jobs:
           $AppName = "OblikCars"
           $InputDir = "target"
           $MainJar = (Get-ChildItem -Path $InputDir -Filter "*.jar" | Select-Object -First 1).Name
-          jpackage --type exe --name $AppName --input $InputDir --main-jar $MainJar --app-version $Version --dest dist
+          jpackage --type exe --name $AppName --input $InputDir --main-jar $MainJar --main-class com.work.oblikcars.Main --app-version $Version --dest dist
 
       - name: Rename EXE to program.exe
         shell: pwsh
