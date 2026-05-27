@@ -25,13 +25,7 @@ jobs:
 
       - name: Install WiX Toolset
         shell: pwsh
-        run: |
-          choco install wixtoolset -y
-          $wixBin = (Get-ChildItem "C:\Program Files (x86)\WiX Toolset*" |
-                      Sort-Object Name |
-                      Select-Object -Last 1).FullName + "\bin"
-          Write-Host "WiX bin path: $wixBin"
-          Add-Content $env:GITHUB_PATH $wixBin
+        run: choco install wixtoolset -y
 
       - name: Build
         run: mvn -q -DskipTests package
@@ -55,31 +49,28 @@ jobs:
           elseif ($parts.Length -eq 2) { $Version = "$Version.0" }
           echo "version=$Version" >> $env:GITHUB_OUTPUT
 
-      - name: Diagnose WiX
-        shell: pwsh
-        run: |
-          Write-Host "=== PATH ==="
-          $env:PATH -split ";" | Where-Object { $_ -match -i "wix" }
-          Write-Host "=== light.exe location ==="
-          Get-Command light.exe -ErrorAction SilentlyContinue
-          Write-Host "=== WiX dirs ==="
-          Get-ChildItem "C:\Program Files (x86)\" | Where-Object { $_.Name -match "WiX" }
-
       - name: Build EXE with jpackage
         shell: pwsh
         run: |
+          # Явно додаємо WiX в PATH цього процесу
+          $wixBin = (Get-ChildItem "C:\Program Files (x86)\WiX Toolset*" |
+                      Sort-Object Name |
+                      Select-Object -Last 1).FullName + "\bin"
+          $env:PATH = "$wixBin;$env:PATH"
+          Write-Host "WiX bin: $wixBin"
+          Write-Host "light.exe found: $(Test-Path "$wixBin\light.exe")"
+
           $Version = "${{ steps.ver.outputs.version }}"
-          $AppName = "OblikCars"
-          $InputDir = "target"
-          $MainJar = (Get-ChildItem -Path $InputDir -Filter "*.jar" |
+          $MainJar = (Get-ChildItem -Path target -Filter "*.jar" |
              Where-Object { $_.Name -notmatch "original|sources|javadoc" } |
              Sort-Object Length -Descending |
              Select-Object -First 1).Name
           Write-Host "Using jar: $MainJar"
+
           jpackage `
             --type exe `
-            --name $AppName `
-            --input $InputDir `
+            --name OblikCars `
+            --input target `
             --main-jar $MainJar `
             --main-class com.work.oblikcars.Main `
             --app-version $Version `
