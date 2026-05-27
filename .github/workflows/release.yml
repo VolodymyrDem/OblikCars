@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: "corretto"
-          java-version: "23"
+          java-version: "21"
 
       - name: Build EXE
         run: mvn -q package   # launch4j запускається автоматично під час package
