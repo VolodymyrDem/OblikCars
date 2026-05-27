@@ -23,9 +23,16 @@ jobs:
           distribution: "corretto"
           java-version: "23"
 
-      - name: Install WiX Toolset
+      - name: Install WiX 3 (short path)
         shell: pwsh
-        run: choco install wixtoolset -y
+        run: |
+          # Завантажуємо бінарники напряму — без choco, без довгих шляхів інсталятора
+          Invoke-WebRequest `
+            -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" `
+            -OutFile "C:\wix314.zip"
+          Expand-Archive -Path "C:\wix314.zip" -DestinationPath "C:\wix" -Force
+          echo "C:\wix" >> $env:GITHUB_PATH
+          Write-Host "light.exe: $(Test-Path 'C:\wix\light.exe')"
 
       - name: Build
         run: mvn -q -DskipTests package
@@ -52,13 +59,11 @@ jobs:
       - name: Build EXE with jpackage
         shell: pwsh
         run: |
-          # Явно додаємо WiX в PATH цього процесу
-          $wixBin = (Get-ChildItem "C:\Program Files (x86)\WiX Toolset*" |
-                      Sort-Object Name |
-                      Select-Object -Last 1).FullName + "\bin"
-          $env:PATH = "$wixBin;$env:PATH"
-          Write-Host "WiX bin: $wixBin"
-          Write-Host "light.exe found: $(Test-Path "$wixBin\light.exe")"
+          # Короткий temp щоб WiX не падав на довгих шляхах
+          $env:PATH = "C:\wix;$env:PATH"
+          $env:TEMP = "C:\tmp"
+          $env:TMP  = "C:\tmp"
+          New-Item -ItemType Directory -Force -Path "C:\tmp" | Out-Null
 
           $Version = "${{ steps.ver.outputs.version }}"
           $MainJar = (Get-ChildItem -Path target -Filter "*.jar" |
@@ -66,6 +71,7 @@ jobs:
              Sort-Object Length -Descending |
              Select-Object -First 1).Name
           Write-Host "Using jar: $MainJar"
+          Write-Host "light.exe found: $(Test-Path 'C:\wix\light.exe')"
 
           jpackage `
             --type exe `
@@ -75,8 +81,7 @@ jobs:
             --main-class com.work.oblikcars.Main `
             --app-version $Version `
             --icon src\main\resources\icon.ico `
-            --dest dist `
-            --verbose 2>&1
+            --dest dist
 
       - name: Create/Update GitHub Release (tagged)
         if: ${{ github.ref_type == 'tag' }}
