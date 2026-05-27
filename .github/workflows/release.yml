@@ -26,13 +26,10 @@ jobs:
       - name: Install WiX 3 (short path)
         shell: pwsh
         run: |
-          # Завантажуємо бінарники напряму — без choco, без довгих шляхів інсталятора
           Invoke-WebRequest `
             -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" `
             -OutFile "C:\wix314.zip"
           Expand-Archive -Path "C:\wix314.zip" -DestinationPath "C:\wix" -Force
-          echo "C:\wix" >> $env:GITHUB_PATH
-          Write-Host "light.exe: $(Test-Path 'C:\wix\light.exe')"
 
       - name: Build
         run: mvn -q -DskipTests package
@@ -56,10 +53,9 @@ jobs:
           elseif ($parts.Length -eq 2) { $Version = "$Version.0" }
           echo "version=$Version" >> $env:GITHUB_OUTPUT
 
-      - name: Build EXE with jpackage
+      - name: Build installer with jpackage
         shell: pwsh
         run: |
-          # Короткий temp щоб WiX не падав на довгих шляхах
           $env:PATH = "C:\wix;$env:PATH"
           $env:TEMP = "C:\tmp"
           $env:TMP  = "C:\tmp"
@@ -71,23 +67,25 @@ jobs:
              Sort-Object Length -Descending |
              Select-Object -First 1).Name
           Write-Host "Using jar: $MainJar"
-          Write-Host "light.exe found: $(Test-Path 'C:\wix\light.exe')"
 
+          # --type msi не потребує bootstrapper/VC++ runtime — стабільніший варіант
           jpackage `
-            --type exe `
+            --type msi `
             --name OblikCars `
             --input target `
             --main-jar $MainJar `
             --main-class com.work.oblikcars.Main `
             --app-version $Version `
             --icon src\main\resources\icon.ico `
+            --win-dir-chooser `
+            --win-shortcut `
             --dest dist
 
       - name: Create/Update GitHub Release (tagged)
         if: ${{ github.ref_type == 'tag' }}
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: dist/*.msi
 
       - name: Create/Update GitHub Release (latest)
         if: ${{ github.ref_type != 'tag' }}
@@ -97,4 +95,4 @@ jobs:
           name: Latest build
           prerelease: true
           target_commitish: ${{ github.sha }}
-          files: dist/*.exe
+          files: dist/*.msi
