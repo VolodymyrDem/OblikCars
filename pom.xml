@@ -148,6 +148,41 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>2.5.0</version>
+                <executions>
+                    <execution>
+                        <id>l4j-gui</id>
+                        <phase>package</phase>
+                        <goals><goal>launch4j</goal></goals>
+                        <configuration>
+                            <headerType>gui</headerType>
+                            <outfile>target/OblikCars.exe</outfile>
+                            <jar>target/OblikCars-1.0-SNAPSHOT.jar</jar>
+                            <icon>src/main/resources/icon.ico</icon>
+                            <classPath>
+                                <mainClass>com.work.oblikcars.Main</mainClass>
+                            </classPath>
+                            <jre>
+                                <minVersion>17</minVersion>
+                            </jre>
+                            <versionInfo>
+                                <fileVersion>1.0.0.0</fileVersion>
+                                <txtFileVersion>1.0.0</txtFileVersion>
+                                <fileDescription>OblikCars</fileDescription>
+                                <copyright>2025</copyright>
+                                <productVersion>1.0.0.0</productVersion>
+                                <txtProductVersion>1.0.0</txtProductVersion>
+                                <productName>OblikCars</productName>
+                                <internalName>OblikCars</internalName>
+                                <originalFilename>OblikCars.exe</originalFilename>
+                            </versionInfo>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>

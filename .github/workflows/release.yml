@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest   # Launch4j працює і на Linux!
     permissions:
       contents: write
     steps:
@@ -23,78 +23,14 @@ jobs:
           distribution: "corretto"
           java-version: "23"
 
-      - name: Install WiX Toolset
-        shell: pwsh
-        run: choco install wixtoolset -y --force
-
-      - name: Build
-        run: mvn -q -DskipTests package
-
-      - name: Resolve version
-        id: ver
-        shell: pwsh
-        run: |
-          $RefType = "${{ github.ref_type }}"
-          if ($RefType -eq "tag") {
-            $Version = "${{ github.ref_name }}".TrimStart('v')
-          } else {
-            $pom = Get-Content "pom.xml" -Raw
-            $m = [regex]::Match($pom, "<version>([^<]+)</version>")
-            $Version = $m.Groups[1].Value
-            $Version = $Version -replace "-SNAPSHOT", ""
-          }
-          if ([string]::IsNullOrWhiteSpace($Version)) { $Version = "1.0.0" }
-          $parts = $Version.Split('.')
-          if ($parts.Length -eq 1) { $Version = "$Version.0.0" }
-          elseif ($parts.Length -eq 2) { $Version = "$Version.0" }
-          echo "version=$Version" >> $env:GITHUB_OUTPUT
-
-      - name: Build installer with jpackage
-        shell: pwsh
-        run: |
-          # Знаходимо WiX встановлений через choco (містить усі DLL)
-          $wixBin = (Get-ChildItem "C:\Program Files (x86)\WiX Toolset*" |
-                      Sort-Object Name | Select-Object -Last 1).FullName + "\bin"
-          Write-Host "WiX bin: $wixBin"
-          Write-Host "WixUIExtension.dll exists: $(Test-Path "$wixBin\WixUIExtension.dll")"
-          Write-Host "light.exe exists: $(Test-Path "$wixBin\light.exe")"
-
-          # Встановлюємо PATH на рівні машини щоб дочірні процеси (jpackage -> light.exe) бачили WiX
-          [System.Environment]::SetEnvironmentVariable(
-            "PATH",
-            "$wixBin;" + [System.Environment]::GetEnvironmentVariable("PATH", "Machine"),
-            "Machine"
-          )
-          $env:PATH = "$wixBin;$env:PATH"
-
-          $env:TEMP = "C:\tmp"
-          $env:TMP  = "C:\tmp"
-          New-Item -ItemType Directory -Force -Path "C:\tmp" | Out-Null
-
-          $Version = "${{ steps.ver.outputs.version }}"
-          $MainJar = (Get-ChildItem -Path target -Filter "*.jar" |
-             Where-Object { $_.Name -notmatch "original|sources|javadoc" } |
-             Sort-Object Length -Descending |
-             Select-Object -First 1).Name
-          Write-Host "Using jar: $MainJar"
-
-          jpackage `
-            --type msi `
-            --name OblikCars `
-            --input target `
-            --main-jar $MainJar `
-            --main-class com.work.oblikcars.Main `
-            --app-version $Version `
-            --icon src\main\resources\icon.ico `
-            --win-dir-chooser `
-            --win-shortcut `
-            --dest dist
+      - name: Build EXE
+        run: mvn -q package   # launch4j запускається автоматично під час package
 
       - name: Create/Update GitHub Release (tagged)
         if: ${{ github.ref_type == 'tag' }}
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.msi
+          files: target/*.exe
 
       - name: Create/Update GitHub Release (latest)
         if: ${{ github.ref_type != 'tag' }}
@@ -104,4 +40,4 @@ jobs:
           name: Latest build
           prerelease: true
           target_commitish: ${{ github.sha }}
-          files: dist/*.msi
+          files: target/*.exe
