@@ -27,7 +27,11 @@ jobs:
         shell: pwsh
         run: |
           choco install wixtoolset -y
-          $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
+          $wixBin = (Get-ChildItem "C:\Program Files (x86)\WiX Toolset*" |
+                      Sort-Object Name |
+                      Select-Object -Last 1).FullName + "\bin"
+          Write-Host "WiX bin path: $wixBin"
+          Add-Content $env:GITHUB_PATH $wixBin
 
       - name: Build
         run: mvn -q -DskipTests package
@@ -57,7 +61,11 @@ jobs:
           $Version = "${{ steps.ver.outputs.version }}"
           $AppName = "OblikCars"
           $InputDir = "target"
-          $MainJar = (Get-ChildItem -Path $InputDir -Filter "*.jar" | Select-Object -First 1).Name
+          $MainJar = (Get-ChildItem -Path $InputDir -Filter "*.jar" |
+             Where-Object { $_.Name -notmatch "original|sources|javadoc" } |
+             Sort-Object Length -Descending |
+             Select-Object -First 1).Name
+          Write-Host "Using jar: $MainJar"
           jpackage `
             --type exe `
             --name $AppName `
