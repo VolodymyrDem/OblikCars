@@ -23,6 +23,12 @@ jobs:
           distribution: "corretto"
           java-version: "23"
 
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: |
+          choco install wixtoolset -y
+          $env:PATH += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
+
       - name: Build
         run: mvn -q -DskipTests package
 
@@ -53,24 +59,20 @@ jobs:
           $InputDir = "target"
           $MainJar = (Get-ChildItem -Path $InputDir -Filter "*.jar" | Select-Object -First 1).Name
           jpackage `
-            --type app-image `
+            --type exe `
             --name $AppName `
             --input $InputDir `
             --main-jar $MainJar `
             --main-class com.work.oblikcars.Main `
             --app-version $Version `
+            --icon src\main\resources\icon.ico `
             --dest dist
-
-      - name: Zip the app image
-        shell: pwsh
-        run: |
-          Compress-Archive -Path "dist\OblikCars" -DestinationPath "dist\OblikCars.zip"
 
       - name: Create/Update GitHub Release (tagged)
         if: ${{ github.ref_type == 'tag' }}
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/OblikCars.zip
+          files: dist/*.exe
 
       - name: Create/Update GitHub Release (latest)
         if: ${{ github.ref_type != 'tag' }}
@@ -80,4 +82,4 @@ jobs:
           name: Latest build
           prerelease: true
           target_commitish: ${{ github.sha }}
-          files: dist/OblikCars.zip
+          files: dist/*.exe
