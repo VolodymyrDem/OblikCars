@@ -194,7 +194,8 @@
                                 <mainClass>com.work.oblikcars.Main</mainClass>
                             </classPath>
                             <jre>
-                                <minVersion>17</minVersion>
+                                <path>./jre/jdk-21.0.11-full</path>
+                                <minVersion>21</minVersion>
                             </jre>
                             <versionInfo>
                                 <fileVersion>1.0.0.0</fileVersion>
