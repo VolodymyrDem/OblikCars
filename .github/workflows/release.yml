@@ -23,13 +23,9 @@ jobs:
           distribution: "corretto"
           java-version: "23"
 
-      - name: Install WiX 3 (short path)
+      - name: Install WiX Toolset
         shell: pwsh
-        run: |
-          Invoke-WebRequest `
-            -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" `
-            -OutFile "C:\wix314.zip"
-          Expand-Archive -Path "C:\wix314.zip" -DestinationPath "C:\wix" -Force
+        run: choco install wixtoolset -y --force
 
       - name: Build
         run: mvn -q -DskipTests package
@@ -56,7 +52,21 @@ jobs:
       - name: Build installer with jpackage
         shell: pwsh
         run: |
-          $env:PATH = "C:\wix;$env:PATH"
+          # Знаходимо WiX встановлений через choco (містить усі DLL)
+          $wixBin = (Get-ChildItem "C:\Program Files (x86)\WiX Toolset*" |
+                      Sort-Object Name | Select-Object -Last 1).FullName + "\bin"
+          Write-Host "WiX bin: $wixBin"
+          Write-Host "WixUIExtension.dll exists: $(Test-Path "$wixBin\WixUIExtension.dll")"
+          Write-Host "light.exe exists: $(Test-Path "$wixBin\light.exe")"
+
+          # Встановлюємо PATH на рівні машини щоб дочірні процеси (jpackage -> light.exe) бачили WiX
+          [System.Environment]::SetEnvironmentVariable(
+            "PATH",
+            "$wixBin;" + [System.Environment]::GetEnvironmentVariable("PATH", "Machine"),
+            "Machine"
+          )
+          $env:PATH = "$wixBin;$env:PATH"
+
           $env:TEMP = "C:\tmp"
           $env:TMP  = "C:\tmp"
           New-Item -ItemType Directory -Force -Path "C:\tmp" | Out-Null
@@ -68,7 +78,6 @@ jobs:
              Select-Object -First 1).Name
           Write-Host "Using jar: $MainJar"
 
-          # --type msi не потребує bootstrapper/VC++ runtime — стабільніший варіант
           jpackage `
             --type msi `
             --name OblikCars `
