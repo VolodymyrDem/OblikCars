@@ -111,14 +111,6 @@ public class CarRegisterController extends WindowController {
         });
         rentCol.visibleProperty().bind(showRentDateCheck.selectedProperty());
 
-        TableColumn<CarReportDTO, LocalDate> totalDateCol = new TableColumn<>("Дата тоталу");
-        totalDateCol.setCellValueFactory(new PropertyValueFactory<>("totalDate"));
-        formatDateColumn(totalDateCol);
-
-        TableColumn<CarReportDTO, LocalDate> totalPayDateCol = new TableColumn<>("Дата відшкодування");
-        totalPayDateCol.setCellValueFactory(new PropertyValueFactory<>("totalPayDate"));
-        formatDateColumn(totalPayDateCol);
-
         TableColumn<CarReportDTO, Double> disposalPriceCol = new TableColumn<>("Ціна вибуття");
         disposalPriceCol.setCellValueFactory(new PropertyValueFactory<>("disposalPrice"));
         formatDoubleColumn(disposalPriceCol, "#,##0.00");
@@ -150,7 +142,7 @@ public class CarRegisterController extends WindowController {
         table.getColumns().addAll(
                 numCol, projectCol, modelCol, colorCol, numberCol, purchaseDateCol,
                 yearCol, rentedCol, rentCol, mileageCol, odometerCol,
-                priceCol, firstRegCol, transportPriceCol, totalPriceCol, totalDateCol, totalPayDateCol, disposalDateCol, disposalPriceCol
+                priceCol, firstRegCol, transportPriceCol, totalPriceCol, disposalDateCol, disposalPriceCol
         );
 
         table.setRowFactory(tv -> new TableRow<>() {
