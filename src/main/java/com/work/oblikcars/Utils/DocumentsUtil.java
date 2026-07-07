@@ -11,6 +11,8 @@ import javafx.stage.Window;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.work.oblikcars.Utils.DB.CarUtil;
 import com.work.oblikcars.Utils.DB.ListUtil;
@@ -25,6 +27,7 @@ import java.time.format.ResolverStyle;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import java.awt.*;
@@ -603,12 +606,25 @@ public class DocumentsUtil {
 
 
 
+    // Перевантаження без підсвічування — делегує до основного методу
     public static <T> void exportTableViewToExcel(
             TableView<T> tableView,
             List<T> allItems,
             Window parentWindow,
             int folderIndex,
             String fileName
+    ) {
+        exportTableViewToExcel(tableView, allItems, parentWindow, folderIndex, fileName, null);
+    }
+
+    // Основний метод з опціональним підсвічуванням рядків
+    public static <T> void exportTableViewToExcel(
+            TableView<T> tableView,
+            List<T> allItems,
+            Window parentWindow,
+            int folderIndex,
+            String fileName,
+            Predicate<T> highlightRow
     ) {
         if (folderIndex < 1 || folderIndex > SUBFOLDERS.size()) {
             throw new IllegalArgumentException("Невірний індекс папки.");
@@ -620,60 +636,60 @@ public class DocumentsUtil {
         int columnsCount = visibleColumns.size();
 
         String subfolderName = SUBFOLDERS.get(folderIndex - 1);
-        String name = ELEMENTSNAMES.get(folderIndex-1);
+        String name = ELEMENTSNAMES.get(folderIndex - 1);
         Path targetDir = Path.of(getAppDirectory(), ROOT_FOLDER_NAME, subfolderName);
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Зберегти Excel файл");
         fileChooser.setInitialDirectory(targetDir.toFile());
-        fileChooser.setInitialFileName(fileName+".xlsx");
+        fileChooser.setInitialFileName(fileName + ".xlsx");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel Files", "*.xlsx"));
 
         File file = fileChooser.showSaveDialog(parentWindow);
         if (file == null) return;
 
-        try (Workbook workbook = new XSSFWorkbook()) {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet(name);
 
             // Звичайний стиль з тонкими межами
-            CellStyle thinBorderStyle = workbook.createCellStyle();
+            XSSFCellStyle thinBorderStyle = workbook.createCellStyle();
             thinBorderStyle.setBorderTop(BorderStyle.THIN);
             thinBorderStyle.setBorderBottom(BorderStyle.THIN);
             thinBorderStyle.setBorderLeft(BorderStyle.THIN);
             thinBorderStyle.setBorderRight(BorderStyle.THIN);
 
+            // Стиль з рожевим підсвічуванням (для рядків "тотал")
+            XSSFCellStyle highlightStyle = workbook.createCellStyle();
+            highlightStyle.cloneStyleFrom(thinBorderStyle);
+            highlightStyle.setFillForegroundColor(new XSSFColor(new byte[]{(byte) 255, (byte) 140, (byte) 140}, null));
+            highlightStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-// Стиль для заголовків
+            // Стиль для заголовків
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
-            CellStyle headerStyle = workbook.createCellStyle();
+            XSSFCellStyle headerStyle = workbook.createCellStyle();
             headerStyle.cloneStyleFrom(thinBorderStyle);
             headerStyle.setFont(headerFont);
-
-// Стиль із товстими зовнішніми межами (будемо копіювати)
-            CellStyle thickStyleTemplate = workbook.createCellStyle();
-            thickStyleTemplate.cloneStyleFrom(thinBorderStyle);
 
             // Стиль для великого заголовка (title)
             Font titleFont = workbook.createFont();
             titleFont.setBold(true);
             titleFont.setFontHeightInPoints((short) 14);
 
-            CellStyle titleStyle = workbook.createCellStyle();
+            XSSFCellStyle titleStyle = workbook.createCellStyle();
             titleStyle.setFont(titleFont);
             titleStyle.setAlignment(HorizontalAlignment.CENTER);
             titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
             Row titleRow = sheet.createRow(0);
             Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue(fileName); // те, що ти хочеш показати як заголовок
+            titleCell.setCellValue(fileName);
             titleCell.setCellStyle(titleStyle);
             for (int i = 0; i < columnsCount; i++) {
                 sheet.autoSizeColumn(i);
             }
 
-// Обʼєднати клітинки по ширині таблиці
+            // Обʼєднати клітинки по ширині таблиці
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, columnsCount - 1));
-
 
             Row headerRow = sheet.createRow(1);
             for (int i = 0; i < columnsCount; i++) {
@@ -682,15 +698,16 @@ public class DocumentsUtil {
                 cell.setCellStyle(headerStyle);
             }
 
-
             for (int i = 0; i < columnsCount; i++) {
                 sheet.autoSizeColumn(i);
             }
 
-
             for (int i = 0; i < allItems.size(); i++) {
                 Row row = sheet.createRow(i + 2);
                 T item = allItems.get(i);
+
+                boolean isHighlighted = highlightRow != null && highlightRow.test(item);
+                XSSFCellStyle baseStyle = isHighlighted ? highlightStyle : thinBorderStyle;
 
                 for (int j = 0; j < columnsCount; j++) {
                     TableColumn<T, ?> col = visibleColumns.get(j);
@@ -705,31 +722,26 @@ public class DocumentsUtil {
                         LocalDate date = (LocalDate) value;
                         String header = visibleColumns.get(j).getText();
 
-                        // Формати
                         DateTimeFormatter monthYearUk = DateTimeFormatter.ofPattern("LLLL yyyy", new Locale("uk"));
                         DateTimeFormatter dateStd     = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
-                        // Якщо це саме колонка з місяцем/роком ренту — показуємо “лютий 2026”
                         if ("Місяць та рік передачі в рент".equals(header)) {
                             cell.setCellValue(monthYearUk.format(date));
                         } else {
-                            // Інакше — повна дата у звичному форматі
                             cell.setCellValue(dateStd.format(date));
                         }
                     } else {
                         cell.setCellValue(value != null ? value.toString() : "");
                     }
 
-                    cell.setCellStyle(thinBorderStyle);
-
+                    cell.setCellStyle(baseStyle);
                 }
             }
             for (int i = 0; i < columnsCount; i++) {
                 sheet.autoSizeColumn(i);
             }
 
-
-            int firstRow = 1; // починаючи з headerRow
+            int firstRow = 1;
             int lastRow = allItems.size() + 1;
             int lastCol = columnsCount;
 
@@ -741,22 +753,18 @@ public class DocumentsUtil {
                     Cell cell = row.getCell(j);
                     if (cell == null) continue;
 
-                    CellStyle currentStyle = cell.getCellStyle();
-                    CellStyle newStyle = workbook.createCellStyle();
+                    XSSFCellStyle currentStyle = (XSSFCellStyle) cell.getCellStyle();
+                    XSSFCellStyle newStyle = workbook.createCellStyle();
                     newStyle.cloneStyleFrom(currentStyle);
 
-                    if (i == firstRow) newStyle.setBorderTop(BorderStyle.THICK);        // Верх — для рядка з заголовками
-                    if (i == lastRow) newStyle.setBorderBottom(BorderStyle.THICK);      // Низ — для останнього рядка з даними
-                    if (j == 0) newStyle.setBorderLeft(BorderStyle.THICK);              // Ліва межа
-                    if (j == lastCol - 1) newStyle.setBorderRight(BorderStyle.THICK);   // Права межа
+                    if (i == firstRow) newStyle.setBorderTop(BorderStyle.THICK);
+                    if (i == lastRow) newStyle.setBorderBottom(BorderStyle.THICK);
+                    if (j == 0) newStyle.setBorderLeft(BorderStyle.THICK);
+                    if (j == lastCol - 1) newStyle.setBorderRight(BorderStyle.THICK);
 
                     cell.setCellStyle(newStyle);
                 }
             }
-
-
-
-
 
 
             try (FileOutputStream out = new FileOutputStream(file)) {

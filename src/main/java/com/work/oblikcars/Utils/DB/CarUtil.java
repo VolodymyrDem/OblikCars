@@ -584,6 +584,7 @@ public class CarUtil {
                 boolean rented = (rentDate != null) && !rentDate.isAfter(reportDate);
 
                 TotalInfo totalInfo = getLatestTotalCaseInfo(carId);
+                Double disposalPrice = getDisposalPrice(carId);
 
                 CarReportDTO dto = new CarReportDTO(
                         idx++,
@@ -601,7 +602,8 @@ public class CarUtil {
                         purchaseDate, // ← може бути null
                         lastMiles,
                         totalInfo.totalDate,
-                        totalInfo.totalPayDate
+                        totalInfo.totalPayDate,
+                        disposalPrice
                 );
                 rows.add(dto);
             }
@@ -638,6 +640,29 @@ public class CarUtil {
             System.err.println("Error getting total case for car: " + e.getMessage());
         }
         return new TotalInfo(null, null);
+    }
+
+    private Double getDisposalPrice(int carId) {
+        String sql = """
+        SELECT price
+          FROM cardisposals
+         WHERE carid = ?
+      ORDER BY date DESC
+         LIMIT 1
+        """;
+        try (Connection connection = Connect();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, carId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    double val = rs.getDouble("price");
+                    return rs.wasNull() ? null : val;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting disposal price for car: " + e.getMessage());
+        }
+        return null;
     }
 
     private static class TotalInfo {

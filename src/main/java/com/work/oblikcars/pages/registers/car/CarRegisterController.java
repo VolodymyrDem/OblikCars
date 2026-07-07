@@ -119,6 +119,10 @@ public class CarRegisterController extends WindowController {
         totalPayDateCol.setCellValueFactory(new PropertyValueFactory<>("totalPayDate"));
         formatDateColumn(totalPayDateCol);
 
+        TableColumn<CarReportDTO, Double> disposalPriceCol = new TableColumn<>("Ціна вибуття");
+        disposalPriceCol.setCellValueFactory(new PropertyValueFactory<>("disposalPrice"));
+        formatDoubleColumn(disposalPriceCol, "#,##0.00");
+
         TableColumn<CarReportDTO, Double> mileageCol = new TableColumn<>("Загальний пробіг у ренті");
         mileageCol.setCellValueFactory(new PropertyValueFactory<>("mileage"));
         formatDoubleColumn(mileageCol, "#,##0.##");
@@ -142,7 +146,7 @@ public class CarRegisterController extends WindowController {
         table.getColumns().addAll(
                 numCol, projectCol, modelCol, colorCol, numberCol, purchaseDateCol,
                 yearCol, rentedCol, rentCol, mileageCol, odometerCol,
-                priceCol, firstRegCol, transportPriceCol, totalPriceCol, totalDateCol, totalPayDateCol
+                priceCol, firstRegCol, transportPriceCol, totalPriceCol, totalDateCol, totalPayDateCol, disposalPriceCol
         );
 
         table.setRowFactory(tv -> new TableRow<>() {
@@ -189,8 +193,9 @@ public class CarRegisterController extends WindowController {
                     table,
                     new ArrayList<>(rows),
                     MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
-                    4,
-                    fileName
+                    1,
+                    fileName,
+                    CarReportDTO::isTotal
             );
         });
 

@@ -21,6 +21,7 @@ public class CarReportDTO {
     private final Double odometer;          // Останній показник одометра
     private final LocalDate totalDate;      // Дата тоталу (страховий випадок)
     private final LocalDate totalPayDate;   // Дата відшкодування
+    private final Double disposalPrice;    // Ціна вибуття (з журналу вибуття)
 
     public CarReportDTO(
             int rowNo,
@@ -38,7 +39,8 @@ public class CarReportDTO {
             LocalDate purchaseDate,
             Double odometer,
             LocalDate totalDate,
-            LocalDate totalPayDate
+            LocalDate totalPayDate,
+            Double disposalPrice
     ) {
         this.rowNo = rowNo;
         this.model = model;
@@ -57,6 +59,7 @@ public class CarReportDTO {
         this.odometer = odometer;
         this.totalDate = totalDate;
         this.totalPayDate = totalPayDate;
+        this.disposalPrice = disposalPrice;
     }
 
     private static double safe(Double v) { return v == null ? 0d : v; }
@@ -79,5 +82,6 @@ public class CarReportDTO {
     public Double getOdometer() { return odometer; }
     public LocalDate getTotalDate() { return totalDate; }
     public LocalDate getTotalPayDate() { return totalPayDate; }
+    public Double getDisposalPrice() { return disposalPrice; }
     public boolean isTotal() { return totalDate != null; }
 }
