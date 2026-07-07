@@ -123,6 +123,10 @@ public class CarRegisterController extends WindowController {
         disposalPriceCol.setCellValueFactory(new PropertyValueFactory<>("disposalPrice"));
         formatDoubleColumn(disposalPriceCol, "#,##0.00");
 
+        TableColumn<CarReportDTO, LocalDate> disposalDateCol = new TableColumn<>("Дата вибуття");
+        disposalDateCol.setCellValueFactory(new PropertyValueFactory<>("disposalDate"));
+        formatDateColumn(disposalDateCol);
+
         TableColumn<CarReportDTO, Double> mileageCol = new TableColumn<>("Загальний пробіг у ренті");
         mileageCol.setCellValueFactory(new PropertyValueFactory<>("mileage"));
         formatDoubleColumn(mileageCol, "#,##0.##");
@@ -146,7 +150,7 @@ public class CarRegisterController extends WindowController {
         table.getColumns().addAll(
                 numCol, projectCol, modelCol, colorCol, numberCol, purchaseDateCol,
                 yearCol, rentedCol, rentCol, mileageCol, odometerCol,
-                priceCol, firstRegCol, transportPriceCol, totalPriceCol, totalDateCol, totalPayDateCol, disposalPriceCol
+                priceCol, firstRegCol, transportPriceCol, totalPriceCol, totalDateCol, totalPayDateCol, disposalDateCol, disposalPriceCol
         );
 
         table.setRowFactory(tv -> new TableRow<>() {
@@ -154,7 +158,7 @@ public class CarRegisterController extends WindowController {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setStyle("");
-                } else if (item.isTotal()) {
+                } else if (item.isDisposed()) {
                     setStyle("-fx-background-color: rgba(255, 140, 140, 0.35);");
                 } else {
                     setStyle("");
@@ -195,7 +199,7 @@ public class CarRegisterController extends WindowController {
                     MainPage.getInstance().openWindows.get(windowTitle).getScene().getWindow(),
                     1,
                     fileName,
-                    CarReportDTO::isTotal
+                    CarReportDTO::isDisposed
             );
         });
 

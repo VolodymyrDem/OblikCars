@@ -584,7 +584,7 @@ public class CarUtil {
                 boolean rented = (rentDate != null) && !rentDate.isAfter(reportDate);
 
                 TotalInfo totalInfo = getLatestTotalCaseInfo(carId);
-                Double disposalPrice = getDisposalPrice(carId);
+                DisposalInfo disposalInfo = getDisposalInfo(carId);
 
                 CarReportDTO dto = new CarReportDTO(
                         idx++,
@@ -603,7 +603,8 @@ public class CarUtil {
                         lastMiles,
                         totalInfo.totalDate,
                         totalInfo.totalPayDate,
-                        disposalPrice
+                        disposalInfo.price,
+                        disposalInfo.date
                 );
                 rows.add(dto);
             }
@@ -647,8 +648,8 @@ public class CarUtil {
         SELECT price
           FROM cardisposals
          WHERE carid = ?
-      ORDER BY date DESC
-         LIMIT 1
+       ORDER BY date DESC
+          LIMIT 1
         """;
         try (Connection connection = Connect();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -663,6 +664,42 @@ public class CarUtil {
             System.err.println("Error getting disposal price for car: " + e.getMessage());
         }
         return null;
+    }
+
+    private DisposalInfo getDisposalInfo(int carId) {
+        String sql = """
+        SELECT date, price
+          FROM cardisposals
+         WHERE carid = ?
+       ORDER BY date DESC
+          LIMIT 1
+        """;
+        try (Connection connection = Connect();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, carId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Date dateSql = rs.getDate("date");
+                    LocalDate date = dateSql != null ? dateSql.toLocalDate() : null;
+                    double priceVal = rs.getDouble("price");
+                    Double price = rs.wasNull() ? null : priceVal;
+                    return new DisposalInfo(date, price);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting disposal info for car: " + e.getMessage());
+        }
+        return new DisposalInfo(null, null);
+    }
+
+    private static class DisposalInfo {
+        final LocalDate date;
+        final Double price;
+
+        private DisposalInfo(LocalDate date, Double price) {
+            this.date = date;
+            this.price = price;
+        }
     }
 
     private static class TotalInfo {
